@@ -1,0 +1,640 @@
+/* ==========================================================================
+   Trinki Master Stylesheet
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. RESET & VARIABLES
+   -------------------------------------------------------------------------- */
+:root {
+  /* Fonts */
+  --font-main: 'Inter', system-ui, -apple-system, blinkmacsystemfont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  --font-display: 'Outfit', 'Inter', system-ui, sans-serif;
+
+  /* Easing */
+  --ease-elastic: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+.full-screen {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-bg);
+  background-image: var(--bg-gradient);
+  background-size: cover;
+  background-attachment: fixed;
+  color: var(--color-text);
+  font-family: var(--font-main);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+  user-select: none;
+  transition: background 0.5s ease-out, color 0.3s ease;
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE/Edge */
+}
+
+body::-webkit-scrollbar {
+  display: none;
+  /* Chrome/Safari */
+}
+
+/* Global Scrollbar Hiding */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* --------------------------------------------------------------------------
+   2. THEMES
+   -------------------------------------------------------------------------- */
+
+/* Liquid Neon (Project Master Theme) */
+body,
+body.theme-neon {
+  --color-bg: #000000;
+  --color-primary: #FF0099;
+  --color-secondary: #00FFFF;
+  --color-accent: #CCFF00;
+  --color-text: #ffffff;
+  --color-text-secondary: rgba(255, 255, 255, 0.7);
+
+  --color-card-bg: rgba(15, 15, 20, 0.6);
+  --color-card-border: rgba(255, 0, 153, 0.3);
+  --color-card-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 0, 153, 0.2);
+
+  background: var(--color-bg);
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(255, 0, 153, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(0, 255, 255, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 50% 10%, rgba(204, 255, 0, 0.05) 0%, transparent 30%);
+  background-size: 200% 200%;
+  animation: liquidAurora 15s ease-in-out infinite alternate;
+}
+
+@keyframes liquidAurora {
+  0% {
+    background-position: 0% 0%;
+  }
+
+  100% {
+    background-position: 100% 100%;
+  }
+}
+
+/* Glass-Morphism Engine (Integrated) */
+.game-card,
+.glass-panel {
+  backdrop-filter: blur(25px) saturate(160%);
+  -webkit-backdrop-filter: blur(25px) saturate(160%);
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  box-shadow: var(--color-card-shadow);
+  border-image: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 50%, rgba(255, 0, 153, 0.4) 100%) 1;
+  will-change: transform;
+  transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Master Button Styling */
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-primary) 0%, #cc00ff 100%);
+  box-shadow: 0 10px 25px rgba(255, 0, 153, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+/* --------------------------------------------------------------------------
+   3. TYPOGRAPHY
+   -------------------------------------------------------------------------- */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  margin: 0;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+h1 {
+  font-size: clamp(2.5rem, 10vw, 5rem);
+}
+
+h2 {
+  font-size: clamp(1.8rem, 6vw, 3rem);
+}
+
+h3 {
+  font-size: clamp(1.2rem, 4vw, 2rem);
+}
+
+p,
+span,
+div,
+button,
+input {
+  font-size: clamp(0.9rem, 2vw, 1.1rem);
+  line-height: 1.5;
+}
+
+/* --------------------------------------------------------------------------
+   4. COMPONENTS
+   -------------------------------------------------------------------------- */
+
+/* --- Buttons --- */
+.btn {
+  padding: 18px 36px;
+  min-height: 60px;
+  min-width: 60px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  border-radius: 50px;
+  will-change: transform;
+  transition: all 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  font-family: var(--font-display);
+}
+
+.btn:active {
+  transform: scale(0.95);
+}
+
+.btn.full-width {
+  width: 100%;
+}
+
+/* Button Variants */
+.btn-primary {
+  background-color: var(--color-primary);
+  color: #fff;
+}
+
+.btn-secondary {
+  background-color: transparent;
+  border: 2px solid var(--color-secondary);
+  color: var(--color-secondary);
+}
+
+.btn-danger {
+  background-color: #ff0055;
+  color: #fff;
+  box-shadow: 0 0 15px #ff0055;
+}
+
+/* Neon Specifics (Applied Globally for Neon) */
+.btn {
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px currentColor;
+}
+
+/* --- Setup & Panels --- */
+.party-setup-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px 0 calc(160px + env(safe-area-inset-bottom)) 0;
+}
+
+.setup-card {
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.setup-title {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 16px;
+  padding-left: 8px;
+}
+
+.glass-panel {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  border-radius: 24px;
+  box-shadow: var(--color-card-shadow);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  transition: transform 0.2s;
+}
+
+/* --- Game Card --- */
+.game-card {
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 32px 24px;
+  border-radius: 32px;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  box-shadow: var(--color-card-shadow);
+
+  backdrop-filter: blur(24px) saturate(110%);
+  -webkit-backdrop-filter: blur(24px) saturate(110%);
+
+  position: relative;
+  transition: transform 0.4s var(--ease-elastic);
+  animation: fadeInScale 0.6s var(--ease-elastic) forwards;
+}
+
+.game-card:active {
+  transform: scale(0.98);
+}
+
+/* Card Theme Overrides REMOVED */
+
+body.theme-neon .game-card {
+  border: 4px solid var(--color-primary);
+  box-shadow: 0 0 40px rgba(255, 0, 153, 0.3), inset 0 0 20px rgba(255, 0, 153, 0.2);
+  border-radius: 20px;
+  background: var(--color-card-bg);
+}
+
+
+/* Card Variants (Hot, Virus, etc) */
+.card-hot {
+  border-color: rgba(255, 0, 110, 0.3);
+  background: linear-gradient(145deg, rgba(255, 0, 110, 0.05), transparent);
+}
+
+.card-virus {
+  border-color: rgba(0, 255, 100, 0.3);
+  background: linear-gradient(145deg, rgba(0, 255, 100, 0.05), transparent);
+}
+
+.card-boss {
+  border-color: rgba(255, 215, 0, 0.4);
+  background: linear-gradient(145deg, rgba(255, 215, 0, 0.1), transparent);
+}
+
+.card-red-flag {
+  border-color: rgba(255, 50, 50, 0.4);
+  background: linear-gradient(145deg, rgba(255, 0, 0, 0.1), transparent);
+}
+
+/* Card Typography */
+.card-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 24px;
+  color: var(--color-primary);
+  opacity: 0.9;
+}
+
+.card-hot .card-title {
+  color: #FF006E;
+}
+
+.card-bomb .card-title {
+  color: #FF5400;
+}
+
+.card-virus .card-title {
+  color: #00FF66;
+}
+
+.card-boss .card-title {
+  color: #FFD60A;
+}
+
+.card-red-flag .card-title {
+  color: #ff3333;
+}
+
+.card-text {
+  font-size: clamp(1.5rem, 5vw, 2.2rem);
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+  margin-bottom: 32px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+
+/* --- Settings Modal --- */
+.settings-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow-y: auto;
+
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* Close Button (Generic Circular) */
+.modal-close-btn {
+  width: 48px;
+  height: 48px;
+  min-width: 0 !important;
+  /* Override button.btn min properties */
+  min-height: 0 !important;
+  padding: 0;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  border-radius: 50%;
+  /* Default Dark Mode Look */
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  /* Reset text styles from .btn */
+  font-size: 1.2rem;
+  font-weight: normal;
+  text-transform: none;
+  box-shadow: none;
+}
+
+/* Light Mode Overrides for Close Button */
+body.theme-glass-light .modal-close-btn,
+body.theme-material-light .modal-close-btn {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: var(--color-text);
+}
+
+/* --- Inputs & Chips --- */
+.player-chip {
+  background: rgba(127, 127, 127, 0.1);
+  border: 1px solid var(--color-card-border);
+  padding: 12px 20px;
+  border-radius: 16px;
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--color-text);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  backdrop-filter: blur(8px);
+}
+
+.input-field {
+  width: 100%;
+  background: rgba(127, 127, 127, 0.05);
+  border: 1px solid var(--color-card-border);
+  border-radius: 16px;
+  padding: 16px;
+  color: var(--color-text);
+  font-family: var(--font-main);
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input-field:focus {
+  border-color: var(--color-primary);
+  background: rgba(127, 127, 127, 0.1);
+}
+
+/* Material overrides for chips/inputs */
+body[class*="theme-material"] .player-chip,
+body[class*="theme-material"] .input-field {
+  border-radius: 20px;
+  backdrop-filter: none;
+  border: none;
+}
+
+
+/* --- Theme Selector (Pill) --- */
+.glass-pill-container {
+  background: rgba(127, 127, 127, 0.15);
+  border: 1px solid var(--color-card-border);
+  padding: 4px;
+  border-radius: 100px;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+}
+
+.glass-active-indicator {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  background: var(--color-card-bg);
+  border-radius: 100px;
+  border: 1px solid var(--color-card-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1;
+  transition: all 0.3s var(--ease-elastic);
+}
+
+.glass-segment-btn {
+  flex: 1;
+  text-align: center;
+  padding: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  position: relative;
+  z-index: 2;
+  background: transparent;
+  border: none;
+  transition: color 0.3s;
+  cursor: pointer;
+}
+
+.glass-segment-btn.active {
+  color: var(--color-text);
+  text-shadow: none;
+}
+
+/* --- Mode Grid --- */
+.mode-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .mode-card-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .mode-card-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+  }
+}
+
+.mode-card {
+  aspect-ratio: 1.2;
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.3s var(--ease-elastic);
+  color: var(--color-text);
+  backdrop-filter: blur(12px);
+}
+
+.mode-card.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+  box-shadow: 0 10px 30px -5px var(--color-primary);
+  transform: scale(1.05);
+}
+
+
+
+/* --- Container Utilities --- */
+.container-responsive {
+  width: 100%;
+  max-width: 650px;
+  /* Default for Phone */
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Tablet / Desktop Overrides */
+@media (min-width: 768px) {
+  .container-responsive {
+    max-width: 900px;
+    padding: 0 40px;
+  }
+
+  /* Increase card size slightly on tablets */
+  .game-card {
+    max-width: 600px;
+  }
+
+  /* Bump font sizes slightly */
+  p,
+  span,
+  div,
+  button,
+  input {
+    font-size: 1.1rem;
+  }
+}
+
+/* --- Animations --- */
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shake {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-5px) rotate(-1deg);
+  }
+
+  75% {
+    transform: translateX(5px) rotate(1deg);
+  }
+}
+
+/* --- Legacy/Misc --- */
+.bottom-gradient-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 24px;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--color-bg) 20%, transparent);
+  display: flex;
+  justify-content: center;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.bottom-gradient-bar>* {
+  pointer-events: auto;
+}

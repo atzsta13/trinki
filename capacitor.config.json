@@ -1,0 +1,6 @@
+{
+  "appId": "com.trinki.game",
+  "appName": "Party Penguin",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}
