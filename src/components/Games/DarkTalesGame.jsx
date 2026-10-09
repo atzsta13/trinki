@@ -3,20 +3,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '../../logic/GameContext';
 import { useTranslation } from 'react-i18next';
 import Button from '../Shared/Button';
-import { playPop, playClick, playSuccess } from '../../logic/sound';
+import { playPop, playClick } from '../../logic/sound';
 import { triggerHaptic, HapticType } from '../../logic/haptics';
 
-const DarkTalesGame = () => {
-    const { players, nextCard, currentCard } = useGame();
+const DarkTalesGame = ({ card, onNext }) => {
+    const { players } = useGame();
     const { t } = useTranslation();
 
     const [stage, setStage] = useState('intro');
     const [narrator, setNarrator] = useState(players[0] || { name: 'Player' });
     const [showSolution, setShowSolution] = useState(false);
 
-    const title = t(`challenges:${currentCard.translationKey}_title`);
-    const story = t(`challenges:${currentCard.translationKey}_story`);
-    const solution = t(`challenges:${currentCard.translationKey}_solution`);
+    const title = t(`challenges:${card.translationKey}_title`);
+    const story = t(`challenges:${card.translationKey}_story`);
+    const solution = t(`challenges:${card.translationKey}_solution`);
 
     const handleStart = () => {
         playClick();
@@ -38,11 +38,6 @@ const DarkTalesGame = () => {
         }
         setShowSolution(!showSolution);
         playPop();
-    };
-
-    const handleFinish = () => {
-        playSuccess();
-        nextCard();
     };
 
 
@@ -194,7 +189,7 @@ const DarkTalesGame = () => {
                 </div>
 
                 <div style={{ marginTop: '20px' }}>
-                    <Button onClick={handleFinish} fullWidth variant="secondary">
+                    <Button onClick={onNext} fullWidth variant="secondary">
                         {t('dark_tales_btn_solved')}
                     </Button>
                 </div>

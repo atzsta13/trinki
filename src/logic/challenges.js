@@ -122,9 +122,10 @@ export const challenges = [
     { id: 'xmas_16', type: 'vote', packs: ['christmas'], spiciness: 1, points: 2, text: 'Who hates Christmas music the most?' },
     { id: 'xmas_17', type: 'charade', packs: ['christmas'], spiciness: 1, points: 2, text: 'Act out: Building a snowman.' },
     { id: 'xmas_18', type: 'statement', packs: ['christmas'], spiciness: 1, points: 2, text: 'Fake or Fact? Jingle Bells was originally a Thanksgiving song. (Fact!).' },
-    { id: 'mg_bomb_1', type: 'bomb', packs: ['bomb', 'classic'], text: "BOMB PARTY: Word Bomb", args: { mode: 'classic' }, spiciness: 2 },
-    { id: 'mg_bomb_2', type: 'bomb', packs: ['bomb'], text: "BOMB PARTY: 5 Second Panic", args: { mode: 'panic' }, spiciness: 3 },
-    { id: 'mg_bomb_3', type: 'bomb', packs: ['bomb'], text: "BOMB PARTY: Alphabet Soup", args: { mode: 'alphabet' }, spiciness: 2 },
+    { id: 'mg_bomb_1', type: 'bomb', packs: ['bomb', 'classic'], text: "BOMB PARTY: Word Bomb", bombMode: 'classic', spiciness: 2 },
+    { id: 'mg_bomb_2', type: 'bomb', packs: ['bomb'], text: "BOMB PARTY: 5 Second Panic", bombMode: 'panic', spiciness: 3 },
+    { id: 'mg_bomb_3', type: 'bomb', packs: ['bomb'], text: "BOMB PARTY: Alphabet Soup", bombMode: 'alphabet', spiciness: 2 },
+    { id: 'mg_charades_1', type: 'charades', packs: ['charades'], text: "HEADS UP: Charades round!", spiciness: 1 },
     { id: 'mg_spy_1', type: 'spy', packs: ['spy', 'classic'], text: "IMPOSTOR: Find the liar!", spiciness: 2 },
 
     // Fake Artist
@@ -146,6 +147,6 @@ export const challenges = [
     { id: 'hot_10', type: 'standard', packs: ['taboo', 'hot', 'closeFriends'], text: "Blindfold yourself and guess who kisses you.", spiciness: 6 },
     { id: 'r_1', type: 'reflex', packs: ['classic'], text: "TAP FAST!", spiciness: 2 },
     { id: 'r_2', type: 'reflex', packs: ['classic'], text: "DON'T SNEEZE, TAP!", spiciness: 2 },
-    { id: 'p_1', type: 'precision', packs: ['classic'], text: "Stop the timer exactly at 3.00s", spiciness: 2 },
+    { id: 'p_1', type: 'precision', packs: ['classic'], text: "Stop the timer at exactly 5.00s", spiciness: 2 },
     { id: 's_1', type: 'shake', packs: ['classic'], text: "Shake the phone to pop the champagne!", spiciness: 1 },
 ];

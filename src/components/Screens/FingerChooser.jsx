@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useGame } from '../../logic/GameContext';
 import Button from '../Shared/Button';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { playBeep, playSuccess } from '../../logic/sound';
-import { triggerHaptic, triggerSelectionHaptic, HapticType } from '../../logic/haptics';
+import { triggerHaptic, HapticType } from '../../logic/haptics';
 import { triggerConfetti } from '../../logic/confetti';
 
 const COLORS = [
@@ -23,12 +23,23 @@ const FingerChooser = () => {
     const [winnerId, setWinnerId] = useState(null);
     const [status, setStatus] = useState('waiting'); // waiting, countdown, chosen
     const timerRef = useRef(null);
+    const intervalRef = useRef(null);
+    // The countdown callback needs the fingers at the moment it fires, not when it started.
+    const touchesRef = useRef(touches);
+    touchesRef.current = touches;
 
-    // Reset logic
+    const stopCountdown = () => {
+        clearTimeout(timerRef.current);
+        clearInterval(intervalRef.current);
+    };
+
+    useEffect(() => stopCountdown, []);
+
     const reset = () => {
+        setTouches({});
         setWinnerId(null);
         setStatus('waiting');
-        if (timerRef.current) clearTimeout(timerRef.current);
+        stopCountdown();
     };
 
     const handlePointerDown = (e) => {
@@ -39,7 +50,7 @@ const FingerChooser = () => {
 
         e.preventDefault();
         // Crisp tick on touch
-        triggerSelectionHaptic();
+        triggerHaptic(HapticType.SELECTION);
 
         const { pointerId, clientX, clientY } = e;
 
@@ -79,48 +90,35 @@ const FingerChooser = () => {
             delete next[pointerId];
             return next;
         });
-
-        // If touches drop below 2 during countdown, cancel? 
-        if (status === 'countdown' && Object.keys(touches).length < 2) {
-            // Optional: Cancel countdown if fingers lift
-        }
     };
 
-    // Game Logic
+    // Two or more fingers start a 3s countdown; lifting below two cancels it.
     useEffect(() => {
         const touchCount = Object.keys(touches).length;
-
         if (status === 'chosen') return;
 
         if (touchCount >= 2 && status === 'waiting') {
             setStatus('countdown');
             playBeep();
-            triggerHaptic(HapticType.HEARTBEAT); // Stronger tick
+            triggerHaptic(HapticType.HEARTBEAT);
 
-            // Faster heartbeat for tension (600ms)
-            const beepInterval = setInterval(() => {
+            intervalRef.current = setInterval(() => {
                 playBeep();
                 triggerHaptic(HapticType.HEARTBEAT);
             }, 600);
 
             timerRef.current = setTimeout(() => {
-                clearInterval(beepInterval);
+                clearInterval(intervalRef.current);
                 pickWinner();
-            }, 3000); // 3 seconds hold
-
-            // Store interval to clear on cancel
-            timerRef.interval = beepInterval;
+            }, 3000);
         } else if (touchCount < 2 && status === 'countdown') {
             setStatus('waiting');
-            if (timerRef.current) {
-                clearTimeout(timerRef.current);
-                if (timerRef.interval) clearInterval(timerRef.interval);
-            }
+            stopCountdown();
         }
     }, [touches, status]);
 
     const pickWinner = () => {
-        const ids = Object.keys(touches);
+        const ids = Object.keys(touchesRef.current);
         if (ids.length === 0) return;
         const randomId = ids[Math.floor(Math.random() * ids.length)];
         setWinnerId(randomId);

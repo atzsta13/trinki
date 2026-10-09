@@ -1,6 +1,6 @@
 import { triggerHaptic, HapticType } from '../../logic/haptics';
 
-const Button = ({ children, onClick, variant = 'primary', fullWidth = false, style = {}, type = 'button', className = '' }) => {
+const Button = ({ children, onClick, variant = 'primary', fullWidth = false, style = {}, type = 'button', className = '', disabled = false }) => {
     const combinedClasses = [
         'btn',
         `btn-${variant}`,
@@ -8,17 +8,14 @@ const Button = ({ children, onClick, variant = 'primary', fullWidth = false, sty
         className
     ].filter(Boolean).join(' ');
 
-    const handlePress = () => {
-        triggerHaptic(HapticType.SELECTION);
-    };
-
     return (
         <button
             type={type}
             className={combinedClasses}
             onClick={onClick}
-            onPointerDown={handlePress}
-            style={style}
+            onPointerDown={() => triggerHaptic(HapticType.SELECTION)}
+            disabled={disabled}
+            style={disabled ? { opacity: 0.5, pointerEvents: 'none', ...style } : style}
         >
             {children}
         </button>

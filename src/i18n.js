@@ -13,7 +13,6 @@ import pl from './locales/pl.json';
 import tr from './locales/tr.json';
 import sv from './locales/sv.json';
 
-
 import challenges_en from './locales/challenges/en.json';
 import challenges_de from './locales/challenges/de.json';
 import challenges_es from './locales/challenges/es.json';
@@ -42,6 +41,8 @@ i18n
             sv: { translation: sv, challenges: challenges_sv }
         },
         fallbackLng: 'en',
+        // Some UI strings (Secrets, Dark Tales) live in the challenges namespace.
+        fallbackNS: 'challenges',
         interpolation: {
             escapeValue: false
         }

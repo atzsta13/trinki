@@ -181,12 +181,13 @@ input {
   min-height: 60px;
   min-width: 60px;
   font-size: 1.2rem;
-  font-weight: bold;
+  font-weight: 800;
   border-radius: 50px;
   will-change: transform;
   transition: all 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px currentColor;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -213,20 +214,6 @@ input {
   background-color: transparent;
   border: 2px solid var(--color-secondary);
   color: var(--color-secondary);
-}
-
-.btn-danger {
-  background-color: #ff0055;
-  color: #fff;
-  box-shadow: 0 0 15px #ff0055;
-}
-
-/* Neon Specifics (Applied Globally for Neon) */
-.btn {
-  text-transform: uppercase;
-  font-weight: 800;
-  letter-spacing: 2px;
-  text-shadow: 0 0 10px currentColor;
 }
 
 /* --- Setup & Panels --- */
@@ -298,15 +285,12 @@ input {
   transform: scale(0.98);
 }
 
-/* Card Theme Overrides REMOVED */
-
 body.theme-neon .game-card {
   border: 4px solid var(--color-primary);
   box-shadow: 0 0 40px rgba(255, 0, 153, 0.3), inset 0 0 20px rgba(255, 0, 153, 0.2);
   border-radius: 20px;
   background: var(--color-card-bg);
 }
-
 
 /* Card Variants (Hot, Virus, etc) */
 .card-hot {
@@ -317,16 +301,6 @@ body.theme-neon .game-card {
 .card-virus {
   border-color: rgba(0, 255, 100, 0.3);
   background: linear-gradient(145deg, rgba(0, 255, 100, 0.05), transparent);
-}
-
-.card-boss {
-  border-color: rgba(255, 215, 0, 0.4);
-  background: linear-gradient(145deg, rgba(255, 215, 0, 0.1), transparent);
-}
-
-.card-red-flag {
-  border-color: rgba(255, 50, 50, 0.4);
-  background: linear-gradient(145deg, rgba(255, 0, 0, 0.1), transparent);
 }
 
 /* Card Typography */
@@ -345,32 +319,23 @@ body.theme-neon .game-card {
   color: #FF006E;
 }
 
-.card-bomb .card-title {
-  color: #FF5400;
-}
-
 .card-virus .card-title {
   color: #00FF66;
 }
 
-.card-boss .card-title {
-  color: #FFD60A;
+.card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 20px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
-
-.card-red-flag .card-title {
-  color: #ff3333;
-}
-
-.card-text {
-  font-size: clamp(1.5rem, 5vw, 2.2rem);
-  line-height: 1.3;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: var(--color-text);
-  margin-bottom: 32px;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
 
 /* --- Settings Modal --- */
 .settings-modal {
@@ -415,14 +380,6 @@ body.theme-neon .game-card {
   box-shadow: none;
 }
 
-/* Light Mode Overrides for Close Button */
-body.theme-glass-light .modal-close-btn,
-body.theme-material-light .modal-close-btn {
-  background: rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  color: var(--color-text);
-}
-
 /* --- Inputs & Chips --- */
 .player-chip {
   background: rgba(127, 127, 127, 0.1);
@@ -455,59 +412,6 @@ body.theme-material-light .modal-close-btn {
 .input-field:focus {
   border-color: var(--color-primary);
   background: rgba(127, 127, 127, 0.1);
-}
-
-/* Material overrides for chips/inputs */
-body[class*="theme-material"] .player-chip,
-body[class*="theme-material"] .input-field {
-  border-radius: 20px;
-  backdrop-filter: none;
-  border: none;
-}
-
-
-/* --- Theme Selector (Pill) --- */
-.glass-pill-container {
-  background: rgba(127, 127, 127, 0.15);
-  border: 1px solid var(--color-card-border);
-  padding: 4px;
-  border-radius: 100px;
-  display: flex;
-  position: relative;
-  overflow: hidden;
-  backdrop-filter: blur(20px);
-}
-
-.glass-active-indicator {
-  position: absolute;
-  top: 4px;
-  bottom: 4px;
-  background: var(--color-card-bg);
-  border-radius: 100px;
-  border: 1px solid var(--color-card-border);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  z-index: 1;
-  transition: all 0.3s var(--ease-elastic);
-}
-
-.glass-segment-btn {
-  flex: 1;
-  text-align: center;
-  padding: 8px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  position: relative;
-  z-index: 2;
-  background: transparent;
-  border: none;
-  transition: color 0.3s;
-  cursor: pointer;
-}
-
-.glass-segment-btn.active {
-  color: var(--color-text);
-  text-shadow: none;
 }
 
 /* --- Mode Grid --- */
@@ -554,8 +458,6 @@ body[class*="theme-material"] .input-field {
   box-shadow: 0 10px 30px -5px var(--color-primary);
   transform: scale(1.05);
 }
-
-
 
 /* --- Container Utilities --- */
 .container-responsive {
@@ -620,7 +522,32 @@ body[class*="theme-material"] .input-field {
   }
 }
 
-/* --- Legacy/Misc --- */
+@keyframes pulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- Layout helpers --- */
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* --- Bottom bar --- */
 .bottom-gradient-bar {
   position: fixed;
   bottom: 0;
