@@ -1,0 +1,117 @@
+# AGENTS.md
+
+Guide for AI coding agents (and humans) working on **Trinki**. Read this first; it is kept short on purpose.
+
+## What this is
+
+Trinki is an offline party/drinking card game for groups ("pass the phone"). Players are entered in seating order, the app deals cards ("Alex, drink if…", votes, truth or dare, taboo) and a few minigames (Bomb, Spy, Charades, Fake Artist, Secrets, Dark Tales). It is a React web app, shipped to Android/iOS via Capacitor.
+
+Product rules that affect code and content:
+- 100 % free, no ads, no accounts, no network calls, no tracking. Everything runs offline; state lives in `localStorage`.
+- Rated 17+ (alcohol references are allowed). Spicy content is gated by the spiciness slider (0–6).
+- **Target device: a cheap, current Android phone.** Performance beats visual flourish (see *Performance rules*).
+- Keep the code small and simple. Don't add dependencies, abstractions or files unless they clearly pay for themselves.
+
+## Commands
+
+```bash
+npm install
+npm run dev        # dev server
+npm run check      # lint + unit tests + production build — run before every commit
+npm run lint       # ESLint 10 incl. React Compiler rules
+npm run test       # Vitest: content/locale sanity checks + deck logic (<1 s)
+npm run build      # production build into dist/
+npm run cap:sync   # build + copy into the native projects
+```
+
+Native builds (Android/iOS): see [docs/native-builds.md](docs/native-builds.md). `android/` and `ios/` are generated and not committed.
+
+## Stack
+
+React 19 + **React Compiler** (no manual `useMemo`/`useCallback`/`memo` needed) · Vite 8 · `motion` 14 (animations + card swipe) · i18next 26 · Capacitor 8 (+ `@capacitor/haptics`) · plain JavaScript (JSX), no TypeScript · plain CSS (`src/index.css`) plus inline styles.
+
+## Code map
+
+```
+src/
+  main.jsx               entry: fonts, CSS, waits for i18n, renders <App>
+  App.jsx                disclaimer gate + screen switch by gameState (setup | playing | finished | chooser)
+  i18n.js                i18next setup; locales are lazy-loaded per language
+  index.css              all global styles + the neon theme (CSS variables)
+  logic/
+    GameContext.jsx      the single app state (players, settings, deck, current card) + persistence
+    deck.js              getDeck(): picks cards for the selected modes, spiciness filter, player assignment
+    challenges.js        the card catalogue (English text) — documented schema at the top
+    modes.js             selectable modes shown on the setup screen
+    names.json           random player-name suggestions (🎲 button)
+    roasts.js            random "raccoon" one-liners under cards
+    sound.js             synthesized sounds (Web Audio, no audio files)
+    haptics.js           vibration via Capacitor Haptics
+    confetti.js          canvas confetti / emoji bursts
+    useShake.js          shake detection for "shake" cards
+  components/
+    Screens/             SetupScreen, GameScreen (+ SwipeCard, game over, active rules), FingerChooser, Disclaimer
+    Shared/              Card (renders every non-minigame card type), Button, SettingsModal, CustomCardInput
+    Games/               one file per minigame; lazy-loaded; props: { card, onNext }
+  locales/
+    <lang>.json          UI strings
+    challenges/<lang>.json  card translations keyed by card id (+ Secrets/Dark Tales UI strings)
+tests/unit/              Vitest tests (content.test.js, deck.test.js)
+public/                  icons, web manifest, privacy.html (store privacy policy)
+```
+
+## How the game works (data flow)
+
+1. **Setup** (`SetupScreen`): players (order = seating order, drag to reorder), spiciness 0–6, selected mode ids.
+2. `launchGame(modes)` → `getDeck()` builds 50 cards:
+   mode ids → `MODE_PACKS` (deck.js) → cards whose `packs` match → spiciness filter (`max(0, level-3) ≤ card ≤ level`) → custom cards always added → prefer cards not in the play history → each card gets `instanceId`, `args` (`p1`, `p2`, `p_left`, `p_right`, `p_opposite`) and `targetPlayerId`.
+3. **GameScreen** shows `currentCard`:
+   - `card.type` in `MINIGAMES` → render that minigame; it calls `onNext()` when done or skipped.
+   - otherwise `<Card>` inside `<SwipeCard>`. Tap = next card. "Choice" cards (truth/dare or text with "… or drink") are swiped: right = done, left = penalty → `points` added to the target player's score.
+4. `nextCard()` refills the deck when empty. Virus cards are also collected as "active rules".
+5. **Game over** shows the scoreboard; "Play again" relaunches with the same modes and resets scores.
+
+Persistence (`localStorage`): `trinki_players`, `trinki_settings`, `trinki_played_cards` (last 500 ids), `trinki_custom_cards`, `trinki_disclaimer_accepted`, `trinki_skipped_names`, `i18nextLng`.
+
+## Common tasks
+
+**Add a card:** append to `src/logic/challenges.js` with a new unique `id`, a valid `type`, `packs`, `spiciness`, English `text`. Optionally add translations to `src/locales/challenges/<lang>.json` under the same id (keep `{{p1}}`-style placeholders identical). Run `npm run test`.
+
+**Add a mode:** add it to `MODES` and a list (`PARTY_MODES`/`SOCIAL_MODES`/`SEASONAL_MODES`) in `modes.js`, map its `id` in `MODE_PACKS` (deck.js), add cards with that pack, add the label key to `locales/en.json` (+ `de.json`).
+
+**Add a minigame:** create `components/Games/XGame.jsx` taking `{ card, onNext }` and always offering a skip/next button; register it in `MINIGAMES` (GameScreen.jsx); add a card with `type: 'x'`; add `'x'` to `CARD_TYPES` in `tests/unit/content.test.js`.
+
+**Add a UI string:** use `t('key')`, add the key to `locales/en.json` (source of truth) and `locales/de.json`. Other languages fall back to English automatically.
+
+**Add a language:** add `locales/<lang>.json` + `locales/challenges/<lang>.json`, add it to `SUPPORTED_LANGUAGES` (i18n.js), `LANGUAGES` (SettingsModal.jsx) and `TTS_LOCALES` (GameScreen.jsx).
+
+## Conventions
+
+- Function components + hooks only. One component per file; small helpers may live in the same file.
+- Follow the React Compiler rules that `npm run lint` enforces: no `Math.random()`/`Date.now()` during render, no reading/writing `ref.current` during render, no `setState` directly inside effects; put side effects in event handlers or effects, never inside state updater functions.
+- State lives in `GameContext`; components keep only local UI state.
+- English is the source language for content; German is the second fully maintained language.
+- Keep comments for the *why*, not the *what*. Match the surrounding style (4-space indent in `src/`, single quotes).
+
+## Performance rules (low-end Android)
+
+- No `backdrop-filter`/blur, no animated `background-position`, no `transition: all`. Animate only `transform` and `opacity`.
+- Don't re-render at high frequency: timers render whole seconds; motion values (not React state) drive drag/animations.
+- Keep heavy things lazy: minigames and locales are separate chunks. Don't import large libraries on the start path.
+- Native bridge calls (haptics) are not free — no haptics on every pointer move.
+- Check `npm run build` output for bundle size when adding a dependency.
+
+## Gotchas
+
+- `src/logic/challenges.js` (English cards) and `src/locales/challenges/*.json` (translations) are different things despite the name.
+- `fallbackNS: 'challenges'` in i18n.js: some UI strings (Secrets, Dark Tales) live in the challenges namespace.
+- Card `text` may contain `{{p1}}` etc. Translation happens in `Card`/`GameScreen` via `t('challenges:<id>', { ...args, defaultValue: text })`.
+- `instanceId` (not `id`) identifies a dealt card; React keys and the virus list use it.
+- `__APP_VERSION__` is injected from `package.json` by Vite.
+- There is no backend and there must not be one without an explicit decision (offline + privacy promise).
+
+## Before you commit
+
+`npm run check` must pass. For UI changes, also run `npm run dev` and click through setup → a few cards → a minigame on a phone-sized viewport.
+
+Open problems and ideas: [docs/backlog.md](docs/backlog.md).

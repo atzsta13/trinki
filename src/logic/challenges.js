@@ -1,3 +1,26 @@
+/**
+ * The card catalogue. English text lives here; translations live in
+ * `src/locales/challenges/<lang>.json`, keyed by `translationKey` or, if absent, by `id`.
+ *
+ * @typedef {object} Challenge
+ * @property {string} id            Unique, stable id (also the default translation key and the "already played" history key).
+ * @property {string} type          How the card is rendered/played. Plain cards: statement, standard, virus, vote, charade,
+ *                                  neverHaveIEver, wouldYouRather ("A OR B?"), taboo, paranoia, truth, dare.
+ *                                  Interactive cards (Card.jsx): reflex, precision, shake.
+ *                                  Minigames (GameScreen.jsx MINIGAMES): bomb, spy, charades, fakeArtist, secrets, darkTales.
+ * @property {string[]} packs       Content packs this card belongs to; selected modes map to packs via MODE_PACKS in deck.js.
+ * @property {number} spiciness     0 (family) – 6 (extreme). Filtered against the spiciness slider in deck.js.
+ * @property {number} [points]      Penalty points shown on the card / added when a player takes the penalty.
+ * @property {string} [text]        English text. Placeholders: {{p1}}, {{p2}}, {{p_left}}, {{p_right}}, {{p_opposite}}.
+ * @property {string} [question]    Alternative to `text` (paranoia cards).
+ * @property {string} [word]        Taboo: word to describe; `forbidden` lists the words that must not be said.
+ * @property {string[]} [forbidden]
+ * @property {string} [translationKey] Overrides `id` as translation key (secrets, darkTales use `<key>_title/_story/_solution`).
+ * @property {number} [duration]    Bomb cards: seconds on the clock ("Name 3 ..." rounds).
+ * @property {'classic'|'panic'|'alphabet'} [bombMode] Bomb minigame variant.
+ */
+
+/** @type {Challenge[]} */
 export const challenges = [
     { id: 'c_1', type: 'statement', packs: ['classic'], spiciness: 1, points: 2, text: 'Players wearing glasses take a sip.' },
     { id: 'c_2', type: 'statement', packs: ['classic'], spiciness: 1, points: 1, text: 'The floor is lava! Last one to stand on a chair drinks.' },

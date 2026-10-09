@@ -1,9 +1,10 @@
 import { challenges } from './challenges';
 
-const DECK_SIZE = 50;
+export const DECK_SIZE = 50;
 
 // Which content packs each selectable mode pulls cards from.
-const MODE_PACKS = {
+// Keys are mode ids from modes.js; values are `packs` used by cards in challenges.js.
+export const MODE_PACKS = {
     classic: ['classic', 'vote', 'charade', 'bomb', 'virus', 'taboo', 'neverHaveIEver', 'wouldYouRather'],
     mostLikely: ['vote'],
     neverHaveIEver: ['neverHaveIEver'],
