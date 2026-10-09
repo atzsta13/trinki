@@ -13,6 +13,9 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version)
   },
+  test: {
+    include: ['tests/unit/**/*.test.js']
+  },
   build: {
     // The app ships inside an evergreen Android/iOS WebView, so no legacy transpilation is needed.
     target: 'es2022',

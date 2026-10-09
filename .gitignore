@@ -39,3 +39,7 @@ Thumbs.db
 # Build outputs
 *.apk
 *.aab
+
+# Test output
+/test-results
+/playwright-report
