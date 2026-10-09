@@ -6,18 +6,6 @@ import PassAndReveal from './PassAndReveal';
 
 const pickRandom = (list) => list[Math.floor(Math.random() * list.length)];
 
-const CATEGORIES = [
-    { name: "Animals", items: ["Cat", "Dog", "Elephant", "Giraffe", "Raccoon", "Snake", "Lion", "Tiger", "Bear", "Shark", "Whale", "Dolphin", "Bird", "Spider", "Frog", "Turtle", "Monkey", "Cow", "Pig", "Horse"] },
-    { name: "Food", items: ["Pizza", "Burger", "Banana", "Ice Cream", "Sushi", "Taco", "Cake", "Apple", "Orange", "Grapes", "Watermelon", "Strawberry", "Cherry", "Pineapple", "Carrot", "Potato", "Corn", "Broccoli", "Tomato", "Cookie"] },
-    { name: "Objects", items: ["Chair", "Car", "House", "Tree", "Book", "Laptop", "Shoe", "Table", "Lamp", "Clock", "Mirror", "Keys", "Wallet", "Phone", "Camera", "Headphones", "Glasses", "Watch", "Pen", "Pencil"] },
-    { name: "Movies", items: ["Titanic", "Star Wars", "Jurassic Park", "Harry Potter", "The Avengers", "Frozen", "The Lion King", "Finding Nemo", "Shrek", "Toy Story", "Avatar", "The Matrix", "Inception", "Joker", "Black Panther"] },
-    { name: "Holidays", items: ["Christmas", "Halloween", "Easter", "Thanksgiving", "New Year", "Valentine's Day", "Hanukkah", "Ramadan", "Diwali", "Kwanzaa", "St. Patrick's Day", "April Fools", "Mother's Day", "Father's Day", "Independence Day"] },
-    { name: "Sports", items: ["Soccer", "Basketball", "Tennis", "Golf", "Volleyball", "Baseball", "Football", "Rugby", "Cricket", "Hockey", "Boxing", "Swimming", "Cycling", "Running", "Skiing"] },
-    { name: "Transport", items: ["Car", "Bus", "Train", "Plane", "Boat", "Bike", "Skateboard", "Rollerblades", "Scooter", "Helicopter", "Submarine", "Rocket", "Truck", "Van", "Motorcycle"] },
-    { name: "Clothes", items: ["Shirt", "Pants", "Dress", "Skirt", "Shorts", "Jacket", "Coat", "Hat", "Scarf", "Gloves", "Socks", "Shoes", "Boots", "Sandals", "Belt"] },
-    { name: "Instruments", items: ["Guitar", "Drums", "Violin", "Flute", "Trumpet", "Piano", "Saxophone", "Clarinet", "Harp", "Cello", "Banjo", "Ukulele", "Accordion", "Trombone", "Tuba"] },
-];
-
 // Everyone draws one line of the secret word; the fake artist doesn't know it and has to bluff.
 const FakeArtistGame = ({ onNext }) => {
     const { players } = useGame();
@@ -30,9 +18,9 @@ const FakeArtistGame = ({ onNext }) => {
     const canvasRef = useRef(null);
 
     const start = () => {
-        const cat = pickRandom(CATEGORIES);
+        const cat = pickRandom(t.words.categories);
         setCategory(cat.name);
-        setWord(pickRandom(cat.items));
+        setWord(pickRandom(cat.words));
         setFakeIndex(Math.floor(Math.random() * players.length));
         setPlayerIndex(0);
         setStage('reveal');

@@ -4,25 +4,6 @@ import Button from '../Shared/Button';
 import { playSuccess, playError, playPop } from '../../logic/sound';
 import { triggerHaptic, HapticType } from '../../logic/haptics';
 
-const CHARADES_WORDS = [
-    "Harry Potter", "Spiderman", "Taylor Swift", "Piano", "T-Rex",
-    "Donald Trump", "Zombie", "Shower", "SpongeBob", "Ballerina",
-    "Monkey", "Robot", "Tooth fairy", "Sumo Wrestler", "Kangaroo",
-    "Batman", "Superman", "Wonder Woman", "Joker", "Vampire",
-    "Werewolf", "Ghost", "Witch", "Alien", "Astronaut",
-    "Cowboy", "Pirate", "Ninja", "Clown", "Mime",
-    "Doctor", "Teacher", "Police Officer", "Firefighter", "Chef",
-    "Cat", "Dog", "Elephant", "Giraffe", "Lion",
-    "Tiger", "Bear", "Shark", "Whale", "Dolphin",
-    "Bird", "Snake", "Spider", "Frog", "Turtle",
-    "Car", "Bus", "Train", "Plane", "Boat",
-    "Bike", "Skateboard", "Rollerblades", "Scooter", "Helicopter",
-    "Guitar", "Drums", "Violin", "Flute", "Trumpet",
-    "Microwave", "Toaster", "Blender", "Vacuum", "Iron",
-    "Washing Machine", "Dishwasher", "Fridge", "Oven", "Stove",
-    "TV", "Computer", "Phone", "Camera", "Headphones"
-];
-
 const ROUND_SECONDS = 60;
 
 const CharadesGame = ({ onNext }) => {
@@ -33,7 +14,8 @@ const CharadesGame = ({ onNext }) => {
     const [currentWord, setCurrentWord] = useState('');
 
     const nextWord = () => {
-        setCurrentWord(CHARADES_WORDS[Math.floor(Math.random() * CHARADES_WORDS.length)]);
+        const words = t.words.charades;
+        setCurrentWord(words[Math.floor(Math.random() * words.length)]);
     };
 
     const handleCorrect = () => {
