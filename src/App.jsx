@@ -6,7 +6,8 @@ import FingerChooser from './components/Screens/FingerChooser';
 import Disclaimer from './components/Screens/Disclaimer';
 import { STORAGE_PREFIX } from './logic/storage';
 
-const DISCLAIMER_KEY = `${STORAGE_PREFIX}disclaimer_accepted`;
+// The teen edition has its own key, so a device that accepted the 18+ warning still sees the ice cube house rules.
+const DISCLAIMER_KEY = `${STORAGE_PREFIX}${__EDITION__ === 'teen' ? 'house_rules_accepted' : 'disclaimer_accepted'}`;
 
 const SCREENS = {
   setup: SetupScreen,

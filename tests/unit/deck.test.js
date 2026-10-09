@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getDeck, DECK_SIZE } from '../../src/logic/deck';
+import { getDeck, hasCards, DECK_SIZE } from '../../src/logic/deck';
 import { challenges } from '../../src/logic/challenges';
 
 const players = [
@@ -55,5 +55,11 @@ describe('getDeck', () => {
 
     it('returns an empty deck when nothing matches', () => {
         expect(getDeck(['spy'], players, [], { spicyLevel: 0 })).toEqual([]);
+    });
+
+    it('knows in advance whether a game has any card', () => {
+        expect(hasCards(['spy'], [], { spicyLevel: 0 })).toBe(false);
+        expect(hasCards(['spy'], [{ id: 'custom_1', text: 'Custom rule', type: 'custom' }], { spicyLevel: 0 })).toBe(true);
+        expect(hasCards(['classic'], [], { spicyLevel: 3 })).toBe(true);
     });
 });

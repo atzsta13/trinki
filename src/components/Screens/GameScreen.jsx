@@ -7,6 +7,7 @@ import SettingsModal from '../Shared/SettingsModal';
 import { triggerHaptic, HapticType } from '../../logic/haptics';
 import { playClick, playSuccess, playError, playPop } from '../../logic/sound';
 import { triggerConfetti, triggerEmojiBurst } from '../../logic/confetti';
+import { CHOICE_PATTERNS } from '../../logic/edition';
 
 const MINIGAMES = {
     bomb: lazy(() => import('../Games/BombGame')),
@@ -24,7 +25,7 @@ const TTS_LOCALES = {
 
 const SWIPE_THRESHOLD = 100; // px
 const SWIPE_VELOCITY = 0.5; // px/ms
-const CHOICE_PATTERN = /(or drink|or penalty|or finish|if you refuse|if yes, drink|if yes penalty|if yes take)/i;
+const CHOICE_PATTERN = CHOICE_PATTERNS[__EDITION__];
 
 // Drag-to-swipe for one card. Moves the element directly (no React render per pointer move);
 // past the threshold the card flies out and `onSwipe(direction)` is called.
@@ -205,7 +206,7 @@ const GameScreen = () => {
         const text = currentText.toLowerCase();
         const match = text.match(/(?:drink|penalty|points|take|lose) (\d+)/);
         if (match) return parseInt(match[1], 10);
-        return text.includes('finish your drink') ? 5 : 1;
+        return __EDITION__ !== 'teen' && text.includes('finish your drink') ? 5 : 1;
     };
 
     const handleSwipe = (direction) => {

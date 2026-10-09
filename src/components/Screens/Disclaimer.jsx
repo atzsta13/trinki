@@ -5,7 +5,7 @@ const Disclaimer = ({ onAccept }) => {
     const t = useT();
     return (
         <div className="screen">
-            <h1 className="accent">⚠️ {t('disclaimer_title')}</h1>
+            <h1 className="accent">{__EDITION__ === 'teen' ? '🧊' : '⚠️'} {t('disclaimer_title')}</h1>
             <div className="panel stack small">
                 <strong>{t('disclaimer_responsible')}</strong>
                 <p>{t('disclaimer_age')}</p>
@@ -13,6 +13,7 @@ const Disclaimer = ({ onAccept }) => {
                 <p>{t('disclaimer_drive')}</p>
             </div>
             <Button onClick={onAccept} className="full-width">{t('disclaimer_accept')}</Button>
+            <p className="muted small center">{t('free_forever')}</p>
         </div>
     );
 };

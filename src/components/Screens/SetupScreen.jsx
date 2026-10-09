@@ -4,12 +4,15 @@ import { useT } from '../../i18n';
 import Button from '../Shared/Button';
 import CustomCardInput from '../Shared/CustomCardInput';
 import SettingsModal from '../Shared/SettingsModal';
-import nameList from '../../logic/names.json';
-import { PARTY_MODES, SOCIAL_MODES, SEASONAL_MODES, DEFAULT_MODES } from '../../logic/modes';
+import { everyone, adult } from '../../logic/names.json';
+import { PARTY_MODES, SOCIAL_MODES, SEASONAL_MODES, DEFAULT_MODES, MAX_SPICINESS } from '../../logic/modes';
 import { triggerHaptic, HapticType } from '../../logic/haptics';
+import { hasCards } from '../../logic/deck';
 import { STORAGE_PREFIX } from '../../logic/storage';
 
-const SPICY_EMOJIS = ['👶', '🧊', '🫣', '🍻', '🔥', '🥵', '☠️'];
+const SPICY_EMOJIS = ['👶', '🧊', '🫣', '🌶️', '🔥', '🥵', '☠️'].slice(0, MAX_SPICINESS + 1);
+// Drinking puns are for the full edition only; the teen build drops them.
+const nameList = __EDITION__ === 'teen' ? everyone : [...everyone, ...adult];
 const SKIPPED_NAMES_KEY = `${STORAGE_PREFIX}skipped_names`;
 
 const ModeGroup = ({ title, description, modes, selectedModes, onToggle }) => {
@@ -35,7 +38,7 @@ const ModeGroup = ({ title, description, modes, selectedModes, onToggle }) => {
 };
 
 const SetupScreen = () => {
-    const { players, setPlayers, addPlayer, removePlayer, launchGame, settings, setSpicyLevel, gameMode, openChooser } = useGame();
+    const { players, setPlayers, addPlayer, removePlayer, launchGame, settings, setSpicyLevel, gameMode, openChooser, customCards } = useGame();
     const t = useT();
     const [name, setName] = useState('');
     const [showSettings, setShowSettings] = useState(false);
@@ -84,7 +87,9 @@ const SetupScreen = () => {
         setName('');
     };
 
-    const canStart = players.length >= 2 && selectedModes.length > 0;
+    // Low spiciness with only a few packs can leave no card at all; say so instead of a dead start button.
+    const noCards = selectedModes.length > 0 && !hasCards(selectedModes, customCards, settings);
+    const canStart = players.length >= 2 && selectedModes.length > 0 && !noCards;
 
     return (
         <div className="setup">
@@ -122,7 +127,7 @@ const SetupScreen = () => {
                         <input
                             type="range"
                             min="0"
-                            max="6"
+                            max={MAX_SPICINESS}
                             value={settings.spicyLevel}
                             onChange={(e) => changeSpice(Number(e.target.value))}
                             className="spicy-slider"
@@ -139,6 +144,7 @@ const SetupScreen = () => {
                             ))}
                         </div>
                         <p className="center small"><em>{t(`spicy_${settings.spicyLevel}`)}</em></p>
+                        {noCards && <p className="center small accent">{t('no_cards')}</p>}
                     </div>
                 </section>
 

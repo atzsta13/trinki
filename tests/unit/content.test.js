@@ -37,6 +37,7 @@ describe('challenges', () => {
         // Every card needs English text, or a translation key that resolves in en.
         const hasText = Boolean(card.text || card.question || card.word || card.translationKey);
         expect(hasText).toBe(true);
+        expect(['undefined', 'boolean', 'string']).toContain(typeof card.teen);
     });
 
     it('taboo cards list forbidden words', () => {
@@ -76,7 +77,8 @@ describe('locales', () => {
         if (c.type === 'darkTales') return ['_title', '_story', '_solution'].map(s => [key + s, enChallenges[key + s]]);
         if (c.type === 'taboo') return [[key, c.word], [`${key}_forbidden`, c.forbidden.join(', ')]];
         if (MINIGAME_ONLY.includes(c.type) && !c.duration) return [];
-        return [[key, c.text || c.question || enChallenges[key]]];
+        const teenText = typeof c.teen === 'string' ? [[`${key}_teen`, c.teen]] : [];
+        return [[key, c.text || c.question || enChallenges[key]], ...teenText];
     }));
 
     it('every card has English source text', () => {

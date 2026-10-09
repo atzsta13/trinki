@@ -7,8 +7,8 @@ Guide for AI coding agents (and humans) working on **Party Penguin**. Read this 
 Party Penguin is an offline party/drinking card game for groups ("pass the phone"). Players are entered in seating order, the app deals cards ("Alex, drink if…", votes, truth or dare, taboo) and a few minigames (Bomb, Spy, Charades, Fake Artist, Secrets, Dark Tales). It is a React web app, shipped to Android/iOS via Capacitor.
 
 Product rules that affect code and content:
-- 100 % free, no ads, no accounts, no network calls, no tracking. Everything runs offline; state lives in `localStorage`.
-- Rated 17+ (alcohol references are allowed). Spicy content is gated by the spiciness slider (0–6).
+- 100 % free, no ads, no subscriptions, no accounts, no network calls, no tracking. Everything runs offline; state lives in `localStorage`. "Free forever, every pack unlocked" is the pitch against subscription-based competitors.
+- **Two editions from one source** ([docs/editions.md](docs/editions.md)): the **teen** edition (13+, app stores) has ice-cube penalties, no alcohol, spiciness 0–3 and no Spicy/Bar modes; the **full** edition (18+, website) has drinking and spiciness 0–6. The edition is chosen at build time; adult content never ships in the teen build.
 - **Target device: a cheap, current Android phone.** Performance beats visual flourish (see *Performance rules*).
 - Keep the code small and simple. Don't add dependencies, abstractions or files unless they clearly pay for themselves.
 
@@ -16,11 +16,11 @@ Product rules that affect code and content:
 
 ```bash
 npm install
-npm run dev        # dev server
-npm run check      # ~10 s: lint (0 warnings) + unit tests + build + bundle-size budget. Run after every change.
-npm run test:e2e   # ~30 s: Playwright on the production build (needs `npm run build` first)
+npm run dev        # dev server, full edition (dev:teen for the teen edition)
+npm run check      # ~15 s: lint (0 warnings) + unit tests + both builds + size budget + teen bundle scan. Run after every change.
+npm run test:e2e   # ~60 s: Playwright on both production builds (needs `npm run check` or both builds first)
 npm run verify     # check + e2e — what CI runs on every PR
-npm run cap:sync   # build + copy into the native projects
+npm run cap:sync   # teen build + copy into the native projects
 ```
 
 E2E needs Chromium: `npx playwright install chromium`, or set `PLAYWRIGHT_CHROMIUM_PATH` to an installed one.
@@ -31,9 +31,10 @@ Native builds (Android/iOS): see [docs/native-builds.md](docs/native-builds.md).
 | Layer | Where | Catches |
 | :--- | :--- | :--- |
 | ESLint + React Compiler rules | `eslint.config.js` | undefined vars, hook misuse, code the compiler can't optimize |
-| Unit tests | `tests/unit/` | broken cards, modes without packs, missing/unknown i18n keys, wrong placeholders, deck logic |
-| Size budget | `scripts/check-size.js` | start bundle > 115 KB gzip |
-| E2E | `tests/e2e/game.spec.js` | crashes, console errors, stuck cards, minigames without exit, raw i18n keys on screen, German UI |
+| Unit tests | `tests/unit/` | broken cards, modes without packs, missing/unknown i18n keys, wrong placeholders, deck logic, alcohol or adult cards in the teen edition (every language) |
+| Size budget | `scripts/check-size.js` | start bundle > 115 KB gzip (both editions) |
+| Teen bundle scan | `scripts/check-teen.js` | alcohol words, full-edition cards/names or `_teen` keys left in `dist-teen` |
+| E2E | `tests/e2e/game.spec.js`, `teen.spec.js` | crashes, console errors, stuck cards, minigames without exit, raw i18n keys on screen, German UI; teen: house rules, hidden modes, slider cap, no drinking on 30 cards |
 | CI | `.github/workflows/ci.yml` | runs `check` + e2e on every PR and push to main; traces uploaded on failure |
 
 E2E tests wait on `data-card` (the dealt card's `instanceId` on the game screen) instead of timeouts — keep that attribute. When you fix a bug, add the test that would have caught it. Never weaken or skip a test to get green.
@@ -56,8 +57,9 @@ src/
     GameContext.jsx      the single app state (players, settings, deck, current card) + persistence
     deck.js              getDeck(): picks cards for the selected modes, spiciness filter, player assignment
     challenges.js        the card catalogue (English text) — documented schema at the top
-    modes.js             selectable modes shown on the setup screen
-    names.json           random player-name suggestions (🎲 button)
+    edition.js           teen/full edition rules (pure; used by the build plugin, tests and dist scan)
+    modes.js             selectable modes shown on the setup screen, spiciness cap per edition
+    names.json           random player-name suggestions (🎲 button): `everyone` + `adult` (full edition only)
     roasts.js            random penguin one-liners under cards
     storage.js           localStorage key prefix + one-time migration from the old app name
     sound.js             synthesized sounds (Web Audio, no audio files)
@@ -72,8 +74,10 @@ src/
     <lang>.json          UI strings
     challenges/<lang>.json  card translations keyed by card id
     words/<lang>.json    minigame word lists (shared categories for Spy/Fake Artist, bomb topics, panic prompts, charades)
-tests/unit/              Vitest: content.test.js (cards/modes/locales), deck.test.js
-tests/e2e/               Playwright: game.spec.js
+tests/unit/              Vitest: content.test.js (cards/modes/locales), deck.test.js, edition.test.js (teen content)
+tests/e2e/               Playwright: game.spec.js (full edition), teen.spec.js (teen edition), helpers.js
+scripts/edition-plugin.js  Vite plugin: rewrites cards and locales for the edition being built
+scripts/check-teen.js    scans dist-teen; alcohol-words.js has the per-language vocabulary
 scripts/check-size.js    start-bundle size budget
 public/                  icons, web manifest, privacy.html (store privacy policy)
 ```
@@ -89,17 +93,17 @@ public/                  icons, web manifest, privacy.html (store privacy policy
 4. `nextCard()` refills the deck when empty. Virus cards are also collected as "active rules".
 5. **Game over** shows the scoreboard; "Play again" relaunches with the same modes and resets scores.
 
-Persistence (`localStorage`, prefix `partypenguin_` from `logic/storage.js`): `players`, `settings`, `played_cards` (last 500 ids), `custom_cards`, `disclaimer_accepted`, `skipped_names`. Data saved under the old name (`trinki_*`) is migrated once on startup. The language is part of `trinki_settings`.
+Persistence (`localStorage`, prefix `partypenguin_` from `logic/storage.js`): `players`, `settings`, `played_cards` (last 500 ids), `custom_cards`, `disclaimer_accepted` (teen edition: `house_rules_accepted`), `skipped_names`. Data saved under the old name (`trinki_*`) is migrated once on startup. The language is part of `partypenguin_settings`.
 
 ## Common tasks
 
-**Add a card:** append to `src/logic/challenges.js` with a new unique `id`, a valid `type`, `packs`, `spiciness`, English `text`. Add its translation to **every** `src/locales/challenges/<lang>.json` under the same id (keep `{{p1}}`-style placeholders identical) — the tests fail if a language is missing a card. Run `npm run test`.
+**Add a card:** append to `src/logic/challenges.js` with a new unique `id`, a valid `type`, `packs`, `spiciness`, English `text`. Add its translation to **every** `src/locales/challenges/<lang>.json` under the same id (keep `{{p1}}`-style placeholders identical) — the tests fail if a language is missing a card. Decide the teen edition: spiciness ≤ 2 is in as is; if it mentions drinking add `teen: '<ice cube version>'` plus `<id>_teen` in every language, or `teen: false` (see [docs/editions.md](docs/editions.md)). Run `npm run test`.
 
-**Add a mode:** add it to `MODES` and a list (`PARTY_MODES`/`SOCIAL_MODES`/`SEASONAL_MODES`) in `modes.js`, map its `id` in `MODE_PACKS` (deck.js), add cards with that pack, add the label key to `locales/en.json` (+ `de.json`).
+**Add a mode:** add it to `MODES` and a list (`PARTY_MODES`/`SOCIAL_MODES`/`SEASONAL_MODES`) in `modes.js`, map its `id` in `MODE_PACKS` (deck.js), add cards with that pack, add the label key to every `locales/<lang>.json`. Teen edition: either it gets teen cards (the tests require every visible mode to have some), or it is full-only (`TEEN_HIDDEN_MODES` and `TEEN_HIDDEN_PACKS` in `edition.js`, and kept out of `MODES` in the teen build like Spicy and Bar).
 
 **Add a minigame:** create `components/Games/XGame.jsx` taking `{ card, onNext }` and always offering a skip/next button; register it in `MINIGAMES` (GameScreen.jsx); add a card with `type: 'x'`; add `'x'` to `CARD_TYPES` in `tests/unit/content.test.js`.
 
-**Add a UI string:** use `t('key')` and add the key to **every** `locales/<lang>.json` (English is the source of truth). The tests enforce that all 10 languages are complete.
+**Add a UI string:** use `t('key')` and add the key to **every** `locales/<lang>.json` (English is the source of truth). The tests enforce that all 10 languages are complete. If it mentions drinking, add a `<key>_teen` variant too.
 
 **Add a language:** add `locales/<lang>.json`, `locales/challenges/<lang>.json` and `locales/words/<lang>.json`, add it to `SUPPORTED_LANGUAGES` (i18n.js), `LANGUAGES` (SettingsModal.jsx) and `TTS_LOCALES` (GameScreen.jsx).
 
@@ -128,7 +132,8 @@ Persistence (`localStorage`, prefix `partypenguin_` from `logic/storage.js`): `p
 - Card `text` may contain `{{p1}}` etc. Translation happens in `Card`/`GameScreen` via `t(card.translationKey, { ...args, defaultValue: text })`.
 - `instanceId` (not `id`) identifies a dealt card; React keys and the virus list use it.
 - The React Compiler reads values used in event handlers *during render* (as memo dependencies). Derive them null-safely (`currentCard?.x`) — while leaving the game, GameScreen renders once more with `currentCard === null`.
-- `__APP_VERSION__` is injected from `package.json` by Vite.
+- `__APP_VERSION__` is injected from `package.json` by Vite; `__EDITION__` (`'teen'`/`'full'`) from the Vite mode. Unit tests run in mode `test`: they see the raw content of both editions and `__EDITION__ === 'full'`.
+- `_teen` keys never reach the app: the build plugin resolves them. Don't read them in components.
 - There is no backend and there must not be one without an explicit decision (offline + privacy promise).
 
 ## Before you commit

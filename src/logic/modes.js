@@ -1,3 +1,7 @@
+import { TEEN_MAX_SPICINESS } from './edition';
+
+const IS_TEEN = __EDITION__ === 'teen';
+
 // `id` is what gets stored in the selected modes and mapped to content packs in deck.js.
 // `label` is an i18n key; `labelFallback` is shown when the key isn't translated.
 export const MODES = {
@@ -18,13 +22,16 @@ export const MODES = {
     marryKissKill: { id: 'marryKissKill', label: 'n_mkk', labelFallback: 'Kiss, Marry, Kill', emoji: '💍' },
     mindMatch: { id: 'mindMatch', label: 'n_mindmatch', labelFallback: 'Mind Match', emoji: '🧠' },
     wrongAnswers: { id: 'wrongAnswers', label: 'n_wronganswers', labelFallback: 'Wrong Answers Only', emoji: '❌' },
-    betBuddy: { id: 'betBuddy', label: 'n_betbuddy', labelFallback: 'Bet Buddy', emoji: '🎰' },
+    betBuddy: { id: 'betBuddy', label: 'n_betbuddy', labelFallback: 'Bet Buddy', emoji: '🤝' },
     fakeOrFact: { id: 'fakeOrFact', label: 'n_fakeorfact', labelFallback: 'Fake or Fact', emoji: '🤥' },
 
     // --- Social / vibes ---
     newFriends: { id: 'newFriends', label: 'mode_icebreaker', emoji: '🧊' },
-    hot: { id: 'closeFriends', label: 'mode_shots', emoji: '🌶️' },
-    bar: { id: 'bar', label: 'mode_bar', emoji: '🍻' },
+    // Full edition only (TEEN_HIDDEN_MODES in edition.js); the teen build doesn't contain them.
+    ...(IS_TEEN ? {} : {
+        hot: { id: 'closeFriends', label: 'mode_shots', emoji: '🌶️' },
+        bar: { id: 'bar', label: 'mode_bar', emoji: '🍻' }
+    }),
     warmUp: { id: 'warmUp', label: 'mode_pregame', emoji: '🏎️' },
     princess: { id: 'princess', label: 'n_princess', labelFallback: 'Princess Treatment', emoji: '👑' },
 
@@ -56,8 +63,11 @@ export const PARTY_MODES = [
     MODES.fakeOrFact
 ];
 
-export const SOCIAL_MODES = [MODES.newFriends, MODES.hot, MODES.bar, MODES.warmUp, MODES.princess];
+export const SOCIAL_MODES = [MODES.newFriends, MODES.hot, MODES.bar, MODES.warmUp, MODES.princess].filter(Boolean);
 export const SEASONAL_MODES = [MODES.christmas, MODES.newYear, MODES.beach, MODES.halloween];
+
+/** Highest level of the spiciness slider in this edition. */
+export const MAX_SPICINESS = IS_TEEN ? TEEN_MAX_SPICINESS : 6;
 
 // All party modes are on by default.
 export const DEFAULT_MODES = PARTY_MODES.map(m => m.id);

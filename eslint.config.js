@@ -3,7 +3,7 @@ import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 
 export default [
-  { ignores: ['dist', 'android', 'ios'] },
+  { ignores: ['dist', 'dist-teen', 'android', 'ios'] },
   js.configs.recommended,
   reactHooks.configs.flat.recommended,
   {
@@ -11,7 +11,7 @@ export default [
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
-      globals: { ...globals.browser, __APP_VERSION__: 'readonly' },
+      globals: { ...globals.browser, __APP_VERSION__: 'readonly', __EDITION__: 'readonly' },
       parserOptions: { ecmaFeatures: { jsx: true } }
     }
   },
