@@ -1,6 +1,6 @@
 # Native builds (Android & iOS)
 
-The web app is wrapped with Capacitor 8. The `android/` and `ios/` folders are generated and **not committed**.
+The web app is wrapped with Capacitor 8. The `android/` and `ios/` folders are generated and **not committed**. The stores get the **teen edition** (13+, `dist-teen/`); see [editions.md](editions.md).
 
 ## Requirements
 
@@ -12,7 +12,7 @@ The web app is wrapped with Capacitor 8. The `android/` and `ios/` folders are g
 
 ```bash
 npm install
-npm run build
+npm run build:teen
 npx cap add android   # and/or: npx cap add ios
 ```
 
@@ -21,7 +21,7 @@ An old `android/` folder from Capacitor 6 should be deleted and re-created this 
 ## Build & run
 
 ```bash
-npm run cap:sync      # web build + copy into android/ and ios/
+npm run cap:sync      # teen build + copy into android/ and ios/
 npx cap open android  # or: npx cap open ios
 ```
 
