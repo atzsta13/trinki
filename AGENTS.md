@@ -91,13 +91,13 @@ Persistence (`localStorage`): `trinki_players`, `trinki_settings`, `trinki_playe
 
 ## Common tasks
 
-**Add a card:** append to `src/logic/challenges.js` with a new unique `id`, a valid `type`, `packs`, `spiciness`, English `text`. Optionally add translations to `src/locales/challenges/<lang>.json` under the same id (keep `{{p1}}`-style placeholders identical). Run `npm run test`.
+**Add a card:** append to `src/logic/challenges.js` with a new unique `id`, a valid `type`, `packs`, `spiciness`, English `text`. Add its translation to **every** `src/locales/challenges/<lang>.json` under the same id (keep `{{p1}}`-style placeholders identical) — the tests fail if a language is missing a card. Run `npm run test`.
 
 **Add a mode:** add it to `MODES` and a list (`PARTY_MODES`/`SOCIAL_MODES`/`SEASONAL_MODES`) in `modes.js`, map its `id` in `MODE_PACKS` (deck.js), add cards with that pack, add the label key to `locales/en.json` (+ `de.json`).
 
 **Add a minigame:** create `components/Games/XGame.jsx` taking `{ card, onNext }` and always offering a skip/next button; register it in `MINIGAMES` (GameScreen.jsx); add a card with `type: 'x'`; add `'x'` to `CARD_TYPES` in `tests/unit/content.test.js`.
 
-**Add a UI string:** use `t('key')`, add the key to `locales/en.json` (source of truth) and `locales/de.json`. Other languages fall back to English automatically.
+**Add a UI string:** use `t('key')` and add the key to **every** `locales/<lang>.json` (English is the source of truth). The tests enforce that all 10 languages are complete.
 
 **Add a language:** add `locales/<lang>.json` + `locales/challenges/<lang>.json`, add it to `SUPPORTED_LANGUAGES` (i18n.js), `LANGUAGES` (SettingsModal.jsx) and `TTS_LOCALES` (GameScreen.jsx).
 
@@ -108,7 +108,7 @@ Persistence (`localStorage`): `trinki_players`, `trinki_settings`, `trinki_playe
 - State lives in `GameContext`; components keep only local UI state.
 - Styling: use the classes in `index.css` (layout helpers like `screen`, `stack`, `row`, text helpers like `muted`, `big`, `accent`). Inline `style` only for values computed at runtime (e.g. finger position).
 - Translations: `const t = useT();` then `t('key')` / `t('key', { name })`. Keys must be string literals so the tests can check them.
-- English is the source language for content; German is the second fully maintained language.
+- English is the source language for content. All 10 languages are complete for UI and cards, and must stay that way.
 - Keep comments for the *why*, not the *what*. Match the surrounding style (4-space indent in `src/`, single quotes).
 
 ## Performance rules (low-end Android)
@@ -122,7 +122,7 @@ Persistence (`localStorage`): `trinki_players`, `trinki_settings`, `trinki_playe
 ## Gotchas
 
 - `src/logic/challenges.js` (English cards) and `src/locales/challenges/*.json` (translations) are different things despite the name.
-- UI strings and card translations are merged into one key space per language; some UI strings (Secrets, Dark Tales) live in `locales/challenges/*.json`.
+- UI strings (`locales/<lang>.json`) and card texts (`locales/challenges/<lang>.json`) are merged into one key space per language. Card keys: card id, `<id>_forbidden` for taboo words, `<key>_title/_story/_solution` for Dark Tales. English card text lives in `challenges.js` (except Secrets/Dark Tales, in `challenges/en.json`).
 - Card `text` may contain `{{p1}}` etc. Translation happens in `Card`/`GameScreen` via `t(card.translationKey, { ...args, defaultValue: text })`.
 - `instanceId` (not `id`) identifies a dealt card; React keys and the virus list use it.
 - The React Compiler reads values used in event handlers *during render* (as memo dependencies). Derive them null-safely (`currentCard?.x`) — while leaving the game, GameScreen renders once more with `currentCard === null`.

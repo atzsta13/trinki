@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useGame } from '../../logic/GameContext';
+import { useT } from '../../i18n';
 import Button from '../Shared/Button';
 import { playBeep, playSuccess } from '../../logic/sound';
 import { triggerHaptic, HapticType } from '../../logic/haptics';
@@ -22,6 +23,7 @@ const CIRCLE_SIZE = 100;
 
 const FingerChooser = () => {
     const { goHome } = useGame();
+    const t = useT();
     const [touches, setTouches] = useState({}); // { [pointerId]: { x, y, color } }
     const [winnerId, setWinnerId] = useState(null);
     const [status, setStatus] = useState('waiting'); // waiting, countdown, chosen
@@ -126,16 +128,16 @@ const FingerChooser = () => {
             onPointerCancel={handlePointerUp}
             onPointerLeave={handlePointerUp}
         >
-            {touchCount === 0 && <Button variant="secondary" className="chooser-back" onClick={goHome}>← Back</Button>}
+            {touchCount === 0 && <Button variant="secondary" className="chooser-back" onClick={goHome}>← {t('back')}</Button>}
 
             {touchCount < 2 && !winnerId && (
                 <div className="center muted passive">
-                    <h2>Finger Chooser</h2>
-                    <p>Place 2+ fingers on screen to choose a starter</p>
+                    <h2>{t('chooser_title')}</h2>
+                    <p>{t('chooser_hint')}</p>
                 </div>
             )}
 
-            {status === 'countdown' && <div className="big passive">Hold...</div>}
+            {status === 'countdown' && <div className="big passive">{t('chooser_hold')}</div>}
 
             {Object.entries(touches).map(([id, touch]) => {
                 const isWinner = id === winnerId;
@@ -153,8 +155,8 @@ const FingerChooser = () => {
 
             {winnerId && (
                 <div className="chooser-result passive pop-in">
-                    <h1>CHOSEN!</h1>
-                    <p>Tap anywhere to reset</p>
+                    <h1>{t('chooser_chosen')}</h1>
+                    <p>{t('chooser_reset')}</p>
                 </div>
             )}
         </div>

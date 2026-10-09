@@ -99,13 +99,13 @@ const SetupScreen = () => {
                         <div key={p.id} className="player-chip">
                             <span>{p.name}</span>
                             <span className="row">
-                                {i > 0 && <button className="chip-move" aria-label="Move up" onClick={() => moveUp(i)}>▲</button>}
+                                {i > 0 && <button className="chip-move" aria-label={t('move_up')} onClick={() => moveUp(i)}>▲</button>}
                                 <button className="chip-remove" onClick={() => removePlayer(p.id)}>✕</button>
                             </span>
                         </div>
                     ))}
                     <form onSubmit={handleAdd} className="row">
-                        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name..." className="input-field" />
+                        <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('name_placeholder')} className="input-field" />
                         <Button variant="secondary" onClick={suggestName}>🎲</Button>
                         <Button type="submit">+</Button>
                     </form>
@@ -147,7 +147,7 @@ const SetupScreen = () => {
 
                     <h4 className="group-title">{t('party_tools')}</h4>
                     <button className="mode-card tool-card" onClick={openChooser}>
-                        <span className="mode-emoji">👆</span> Finger Chooser
+                        <span className="mode-emoji">👆</span> {t('chooser_title')}
                     </button>
 
                     <ModeGroup title={t('cat_social')} description={t('desc_social')} modes={SOCIAL_MODES} selectedModes={selectedModes} onToggle={toggleMode} />

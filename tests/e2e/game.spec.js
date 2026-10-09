@@ -115,6 +115,25 @@ test('dice button suggests a name without adding a player', async ({ page }) => 
     await expect(chips).toHaveCount(3);
 });
 
+test('ending the game from the menu shows the scoreboard, play again deals new cards', async ({ page }) => {
+    await startParty(page, ['Most Likely']);
+    await page.getByRole('button', { name: '☰' }).click();
+    await page.getByRole('button', { name: /end game/i }).click();
+    await expect(page.getByText(/party mvp/i)).toBeVisible();
+    await page.getByRole('button', { name: /play again/i }).click();
+    await expect(page.locator('.game-card')).toBeVisible();
+});
+
+test('every empty mode now has cards', async ({ page }) => {
+    for (const mode of ['Icebreaker', 'Bar', 'Pre-Game', 'New Year', 'Beach']) {
+        await startParty(page, [mode]);
+        await expect(page.locator('.game-card')).toBeVisible();
+        await page.getByRole('button', { name: '☰' }).click();
+        page.once('dialog', d => d.accept());
+        await page.getByRole('button', { name: /quit party/i }).click();
+    }
+});
+
 test('quitting from the menu returns to the setup screen', async ({ page }) => {
     await startParty(page, ['Most Likely']); // no minigames, so the ☰ menu is always there
     await page.getByRole('button', { name: '☰' }).click();

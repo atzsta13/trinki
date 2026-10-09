@@ -110,7 +110,7 @@ const GameOverScreen = ({ players, onPlayAgain, onHome }) => {
             {mvp && (
                 <div className="panel mvp pop-in">
                     <div className="mvp-crown">👑</div>
-                    <h3 className="gold">PARTY MVP</h3>
+                    <h3 className="gold">{t('party_mvp')}</h3>
                     <div className="huge">{mvp.name}</div>
                     <div className="muted">{mvp.drinkCount || 0} {t('points')}</div>
                 </div>
@@ -189,7 +189,7 @@ const GameScreen = () => {
         const streak = (player?.streak || 0) + 1;
         if (!success || !player || streak < 3) return;
 
-        setStreakMessage(`${player.name} is on fire! 🔥 ${streak}`);
+        setStreakMessage(t('streak', { name: player.name, count: streak }));
         setTimeout(() => setStreakMessage(null), 3000);
         playSuccess();
         if (streak >= 5) {
@@ -276,6 +276,7 @@ const GameScreen = () => {
                         translationKey={currentCard.translationKey}
                         args={currentCard.args}
                         onClick={isChoiceCard ? undefined : handleCardTap}
+                        isChoice={isChoiceCard}
                         sips={cardPoints}
                         spiciness={currentCard.spiciness}
                         onResult={handleCardResult}

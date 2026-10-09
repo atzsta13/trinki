@@ -54,6 +54,6 @@ describe('getDeck', () => {
     });
 
     it('returns an empty deck when nothing matches', () => {
-        expect(getDeck(['newYear'], players, [], { spicyLevel: 3 })).toEqual([]);
+        expect(getDeck(['spy'], players, [], { spicyLevel: 0 })).toEqual([]);
     });
 });

@@ -88,7 +88,7 @@ const FakeArtistGame = ({ onNext }) => {
                     playerName={players[playerIndex].name}
                     secret={<>{t('category')}: {category}<br /><strong>{playerIndex === fakeIndex ? t('fake_you_are_fake') : word}</strong></>}
                     isImpostor={playerIndex === fakeIndex}
-                    doneLabel="I Know It (Go Draw)"
+                    doneLabel={t('fake_go_draw')}
                     onDone={() => setStage('draw')}
                 />
             )}
@@ -97,11 +97,11 @@ const FakeArtistGame = ({ onNext }) => {
             <div className="screen" hidden={!showCanvas}>
                 <h3>{stage === 'draw' ? `${players[playerIndex]?.name}: ${t('fake_draw_one')}` : t('final_stats')}</h3>
                 <canvas ref={canvasRef} width={320} height={350} className="drawing" onPointerDown={startLine} onPointerMove={continueLine} />
-                {stage === 'draw' && <><Button onClick={finishTurn}>Done Drawing</Button><p className="muted small">{t('fake_tip_no_lift')}</p></>}
+                {stage === 'draw' && <><Button onClick={finishTurn}>{t('fake_done')}</Button><p className="muted small">{t('fake_tip_no_lift')}</p></>}
                 {stage === 'discuss' && (
                     <>
-                        <p>The Word was: <b>{word}</b></p>
-                        <p>The Fake was: <b className="bad">{players[fakeIndex].name}</b></p>
+                        <p>{t('spy_the_word_was')} <b>{word}</b></p>
+                        <p>{t('fake_was')} <b className="bad">{players[fakeIndex].name}</b></p>
                         <Button onClick={onNext}>{t('next_card')} ➡️</Button>
                     </>
                 )}

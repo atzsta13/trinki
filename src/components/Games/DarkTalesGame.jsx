@@ -32,7 +32,7 @@ const DarkTalesGame = ({ card, onNext }) => {
                 <div className="huge pop-in">🧛</div>
                 <h1 className="blood">{t('dark_tales_title')}</h1>
                 <p className="muted">{t('dark_tales_intro')}</p>
-                <Button variant="danger" onClick={pickNarrator}>{t('start_button')}</Button>
+                <Button variant="danger" onClick={pickNarrator}>{t('start_game')}</Button>
                 <Button variant="secondary" onClick={onNext}>{t('skip_card')}</Button>
             </div>
         );

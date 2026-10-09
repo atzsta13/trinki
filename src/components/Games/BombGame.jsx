@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useT } from '../../i18n';
 import Button from '../Shared/Button';
 import { triggerHaptic, HapticType } from '../../logic/haptics';
 import { playError } from '../../logic/sound';
@@ -28,16 +29,11 @@ const PANIC_PROMPTS = [
     "Name 3 things you can write", "Name 3 things you can read", "Name 3 things you can watch"
 ];
 
-const MODE_INFO = {
-    classic: { title: 'Word Bomb', description: 'Pass the bomb before it explodes!' },
-    panic: { title: '5 Second Panic', description: 'Name 3 things in 5 seconds!' },
-    alphabet: { title: 'Alphabet Soup', description: 'Go through A-Z for the category!' }
-};
-
 const pickRandom = (list) => list[Math.floor(Math.random() * list.length)];
 
 // `card.bombMode` picks the variant; plain bomb cards ("Name 3 ...") play as a panic round with their own prompt.
 const BombGame = ({ card, onNext }) => {
+    const t = useT();
     const mode = card.bombMode || (card.duration ? 'panic' : 'classic');
     const [gameState, setGameState] = useState('setup');
     // The round ends at `deadline`; only whole seconds are rendered, so the UI updates once per second.
@@ -56,7 +52,7 @@ const BombGame = ({ card, onNext }) => {
             setPrompt(pickRandom(CATEGORIES));
             startTimer(Math.floor(Math.random() * 40) + 20);
         } else if (mode === 'panic') {
-            setPrompt(card.duration ? card.text : pickRandom(PANIC_PROMPTS));
+            setPrompt(card.duration ? t(card.translationKey, { defaultValue: card.text }) : pickRandom(PANIC_PROMPTS));
             startTimer(card.duration || 5);
         } else if (mode === 'alphabet') {
             setPrompt(pickRandom(CATEGORIES));
@@ -113,10 +109,10 @@ const BombGame = ({ card, onNext }) => {
     if (gameState === 'setup') {
         return (
             <div className="screen bomb">
-                <h2>{MODE_INFO[mode].title}</h2>
-                <p className="muted">{MODE_INFO[mode].description}</p>
-                <Button onClick={startRound}>Light Fuse</Button>
-                <Button variant="secondary" onClick={onNext}>Skip</Button>
+                <h2>{t(`bomb_${mode}_title`)}</h2>
+                <p className="muted">{t(`bomb_${mode}_desc`)}</p>
+                <Button onClick={startRound}>{t('bomb_light_fuse')}</Button>
+                <Button variant="secondary" onClick={onNext}>{t('skip_card')}</Button>
             </div>
         );
     }
@@ -125,20 +121,20 @@ const BombGame = ({ card, onNext }) => {
         return (
             <div className="screen bomb boom">
                 <h1 className="huge">💥 BOOM 💥</h1>
-                <p>You Lose!</p>
-                <Button onClick={onNext}>Next Card ➡️</Button>
+                <p>{t('bomb_lose')}</p>
+                <Button onClick={onNext}>{t('next_card')} ➡️</Button>
             </div>
         );
     }
 
     return (
         <div className={`screen bomb ${urgency}`}>
-            <p className="muted big">{mode === 'alphabet' ? `Category: ${prompt}` : 'Topic:'}</p>
-            <h1>{mode === 'alphabet' ? `Letter: ${letter}` : prompt}</h1>
+            <p className="muted big">{mode === 'alphabet' ? `${t('category')}: ${prompt}` : t('bomb_topic')}</p>
+            <h1>{mode === 'alphabet' ? `${t('bomb_letter')}: ${letter}` : prompt}</h1>
             {/* Classic hides the timer so nobody knows when it blows. */}
             <div className="bomb-timer">{mode === 'classic' ? '💣' : secondsLeft}</div>
             {mode !== 'classic' && (
-                <Button className="btn-go" onClick={nextRound}>{mode === 'alphabet' ? 'Next Letter (Reset)' : 'Success (Pass)'}</Button>
+                <Button className="btn-go" onClick={nextRound}>{mode === 'alphabet' ? t('bomb_next_letter') : t('bomb_pass')}</Button>
             )}
         </div>
     );

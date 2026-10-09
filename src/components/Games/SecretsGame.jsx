@@ -53,7 +53,7 @@ const SecretsGame = ({ card, onNext }) => {
                 <h1>{t('secrets_intro_title')}</h1>
                 <p className="muted">{t('secrets_intro_desc')}</p>
                 <div className="option"><em>&quot;{question}&quot;</em></div>
-                <Button onClick={() => go('pass')}>Start</Button>
+                <Button onClick={() => go('pass')}>{t('start_game')}</Button>
                 <Button variant="secondary" onClick={onNext}>{t('skip_card')}</Button>
             </div>
         );

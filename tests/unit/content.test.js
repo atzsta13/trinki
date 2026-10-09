@@ -17,7 +17,7 @@ const CARD_TYPES = [
 ];
 
 // Modes that are selectable but have no cards yet. Remove an entry once cards exist.
-const MODES_WITHOUT_CONTENT = ['newFriends', 'bar', 'warmUp', 'newYear', 'beach'];
+const MODES_WITHOUT_CONTENT = [];
 
 const LOCALES_DIR = path.resolve(import.meta.dirname, '../../src/locales');
 const readJson = (file) => JSON.parse(fs.readFileSync(path.join(LOCALES_DIR, file), 'utf8'));
@@ -67,10 +67,22 @@ describe('modes', () => {
 describe('locales', () => {
     const en = readJson('en.json');
     const enChallenges = readJson('challenges/en.json');
-    const cardKeys = new Set(challenges.flatMap(c => {
+    const placeholders = (s) => (s.match(/\{\{\w+\}\}/g) || []).sort().join();
+
+    // Every text a player can see on a card. Minigame cards only start the minigame, their text is never shown.
+    const MINIGAME_ONLY = ['bomb', 'spy', 'charades', 'fakeArtist'];
+    const cardSource = Object.fromEntries(challenges.flatMap(c => {
         const key = c.translationKey || c.id;
-        return c.type === 'darkTales' ? [`${key}_title`, `${key}_story`, `${key}_solution`] : [key];
+        if (c.type === 'darkTales') return ['_title', '_story', '_solution'].map(s => [key + s, enChallenges[key + s]]);
+        if (c.type === 'taboo') return [[key, c.word], [`${key}_forbidden`, c.forbidden.join(', ')]];
+        if (MINIGAME_ONLY.includes(c.type) && !c.duration) return [];
+        return [[key, c.text || c.question || enChallenges[key]]];
     }));
+
+    it('every card has English source text', () => {
+        const missing = Object.entries(cardSource).filter(([, text]) => !text).map(([key]) => key);
+        expect(missing).toEqual([]);
+    });
 
     it('every t() key used in the code exists in English', () => {
         const srcDir = path.resolve(import.meta.dirname, '../../src');
@@ -80,31 +92,28 @@ describe('locales', () => {
             .join('\n');
         const used = new Set([
             ...[...code.matchAll(/\bt\(\s*'(\w+)'/g)].map(m => m[1]),
-            ...Object.values(MODES).map(m => m.label).filter(label => !Object.values(MODES).find(x => x.label === label)?.labelFallback)
+            ...Object.values(MODES).filter(m => !m.labelFallback).map(m => m.label)
         ]);
-        const missing = [...used].filter(k => !(k in en) && !(k in enChallenges));
-        expect(missing).toEqual([]);
+        expect([...used].filter(k => !(k in en))).toEqual([]);
     });
 
-    it.each(LANGUAGES)('%s UI strings only use keys that exist in English', (lang) => {
-        const unknown = Object.keys(readJson(`${lang}.json`)).filter(k => !(k in en));
-        expect(unknown).toEqual([]);
+    // Every language is complete: a missing string would silently show English.
+    it.each(LANGUAGES)('%s has every UI string, and no unknown ones', (lang) => {
+        const strings = readJson(`${lang}.json`);
+        expect(Object.keys(en).filter(k => !(k in strings)), 'missing').toEqual([]);
+        expect(Object.keys(strings).filter(k => !(k in en)), 'unknown').toEqual([]);
     });
 
-    it.each(LANGUAGES)('%s card translations only use known card ids or UI keys', (lang) => {
-        const unknown = Object.keys(readJson(`challenges/${lang}.json`))
-            .filter(k => !cardKeys.has(k) && !(k in enChallenges) && !(k in en));
-        expect(unknown).toEqual([]);
+    it.each(LANGUAGES.filter(l => l !== 'en'))('%s translates every card, and nothing else', (lang) => {
+        const cards = readJson(`challenges/${lang}.json`);
+        expect(Object.keys(cardSource).filter(k => !(k in cards)), 'missing').toEqual([]);
+        expect(Object.keys(cards).filter(k => !(k in cardSource)), 'unknown').toEqual([]);
     });
 
-    it('placeholders in translations match the English source', () => {
-        const placeholders = (s) => (s.match(/\{\{\w+\}\}/g) || []).sort().join();
-        const englishText = Object.fromEntries(challenges.map(c => [c.translationKey || c.id, c.text || c.question || '']));
-        LANGUAGES.forEach(lang => {
-            Object.entries(readJson(`challenges/${lang}.json`)).forEach(([key, value]) => {
-                const source = enChallenges[key] ?? englishText[key];
-                if (source) expect(placeholders(value), `${lang}:${key}`).toBe(placeholders(source));
-            });
-        });
+    it.each(LANGUAGES)('%s keeps the {{placeholders}} of the English source', (lang) => {
+        const ui = readJson(`${lang}.json`);
+        const cards = readJson(`challenges/${lang}.json`);
+        Object.entries(ui).forEach(([key, value]) => expect(placeholders(value), key).toBe(placeholders(en[key])));
+        Object.entries(cards).forEach(([key, value]) => expect(placeholders(value), key).toBe(placeholders(cardSource[key] || '')));
     });
 });

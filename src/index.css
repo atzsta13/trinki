@@ -439,6 +439,8 @@ button {
 .pill small { color: var(--muted); font-size: 0.7rem; text-transform: uppercase; }
 .roast { padding: 10px 15px; border-radius: 15px; background: rgba(0, 0, 0, 0.4); font-size: 0.9rem; animation: fade-in 0.4s 1s backwards; }
 
+.swipe-hint { letter-spacing: 0.5px; }
+
 .card-badge {
   padding: 6px 14px;
   border-radius: 20px;

@@ -15,7 +15,7 @@ const Toggle = ({ label, checked, onToggle }) => (
 );
 
 const SettingsModal = ({ onClose }) => {
-    const { settings, toggleSound, toggleHaptics, setLanguage, resetHistory, gameState, goHome } = useGame();
+    const { settings, toggleSound, toggleHaptics, setLanguage, resetHistory, gameState, goHome, finishGame } = useGame();
     const t = useT();
 
     return (
@@ -41,6 +41,12 @@ const SettingsModal = ({ onClose }) => {
             <Button variant="secondary" className="full-width danger-text" onClick={() => window.confirm(`${t('reset_history')}?`) && resetHistory()}>
                 {t('reset_history')}
             </Button>
+
+            {gameState === 'playing' && (
+                <Button className="full-width" onClick={() => { finishGame(); onClose(); }}>
+                    🏁 {t('end_game')}
+                </Button>
+            )}
 
             {gameState === 'playing' && (
                 <Button
