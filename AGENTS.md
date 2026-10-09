@@ -93,13 +93,13 @@ public/                  icons, web manifest, privacy.html (store privacy policy
 4. `nextCard()` refills the deck when empty. Virus cards are also collected as "active rules".
 5. **Game over** shows the scoreboard; "Play again" relaunches with the same modes and resets scores.
 
-Persistence (`localStorage`, prefix `partypenguin_` from `logic/storage.js`): `players`, `settings`, `played_cards` (last 500 ids), `custom_cards`, `disclaimer_accepted` (teen edition: `house_rules_accepted`), `skipped_names`. Data saved under the old name (`trinki_*`) is migrated once on startup. The language is part of `trinki_settings`.
+Persistence (`localStorage`, prefix `partypenguin_` from `logic/storage.js`): `players`, `settings`, `played_cards` (last 500 ids), `custom_cards`, `disclaimer_accepted` (teen edition: `house_rules_accepted`), `skipped_names`. Data saved under the old name (`trinki_*`) is migrated once on startup. The language is part of `partypenguin_settings`.
 
 ## Common tasks
 
 **Add a card:** append to `src/logic/challenges.js` with a new unique `id`, a valid `type`, `packs`, `spiciness`, English `text`. Add its translation to **every** `src/locales/challenges/<lang>.json` under the same id (keep `{{p1}}`-style placeholders identical) — the tests fail if a language is missing a card. Decide the teen edition: spiciness ≤ 2 is in as is; if it mentions drinking add `teen: '<ice cube version>'` plus `<id>_teen` in every language, or `teen: false` (see [docs/editions.md](docs/editions.md)). Run `npm run test`.
 
-**Add a mode:** add it to `MODES` and a list (`PARTY_MODES`/`SOCIAL_MODES`/`SEASONAL_MODES`) in `modes.js`, map its `id` in `MODE_PACKS` (deck.js), add cards with that pack, add the label key to `locales/en.json` (+ `de.json`).
+**Add a mode:** add it to `MODES` and a list (`PARTY_MODES`/`SOCIAL_MODES`/`SEASONAL_MODES`) in `modes.js`, map its `id` in `MODE_PACKS` (deck.js), add cards with that pack, add the label key to every `locales/<lang>.json`. Teen edition: either it gets teen cards (the tests require every visible mode to have some), or it is full-only (`TEEN_HIDDEN_MODES` and `TEEN_HIDDEN_PACKS` in `edition.js`, and kept out of `MODES` in the teen build like Spicy and Bar).
 
 **Add a minigame:** create `components/Games/XGame.jsx` taking `{ card, onNext }` and always offering a skip/next button; register it in `MINIGAMES` (GameScreen.jsx); add a card with `type: 'x'`; add `'x'` to `CARD_TYPES` in `tests/unit/content.test.js`.
 

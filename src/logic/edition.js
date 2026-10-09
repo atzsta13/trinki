@@ -9,7 +9,7 @@
 /** Highest spiciness level a teen deck can reach (the slider stops here). */
 export const TEEN_MAX_SPICINESS = 3;
 /** Cards above this level are only in the teen edition if they opt in with `teen: true` or a teen text. */
-const TEEN_SAFE_SPICINESS = 2;
+export const TEEN_SAFE_SPICINESS = 2;
 /** Modes (and their content packs) that only exist in the full edition. */
 export const TEEN_HIDDEN_MODES = ['closeFriends', 'bar'];
 const TEEN_HIDDEN_PACKS = ['hot', 'bar'];
@@ -17,6 +17,16 @@ const TEEN_HIDDEN_PACKS = ['hot', 'bar'];
 const TEEN_HIDDEN_STRINGS = ['mode_shots', 'mode_bar', 'spicy_4', 'spicy_5', 'spicy_6'];
 
 const TEEN_SUFFIX = '_teen';
+
+/**
+ * Cards whose text offers a way out ("... or drink") are swiped: right = done, left = penalty.
+ * Matched against the shown (translated) text, so this only works in English. The teen edition says
+ * "or take an ice cube" instead of "or drink"; the tests check that every card is a choice in both or neither.
+ */
+export const CHOICE_PATTERNS = {
+    full: /\b(or drink|or penalty|or finish|if you refuse|if yes, drink|if yes penalty|if yes take)/i,
+    teen: /\b(or take|or penalty|if you refuse|if yes penalty|if yes take)/i
+};
 
 export const isTeenCard = (card) => {
     if (card.teen === false || card.spiciness > TEEN_MAX_SPICINESS) return false;

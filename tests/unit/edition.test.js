@@ -7,7 +7,7 @@ import { challenges } from '../../src/logic/challenges';
 import { MODE_PACKS } from '../../src/logic/deck';
 import { PARTY_MODES, SOCIAL_MODES, SEASONAL_MODES } from '../../src/logic/modes';
 import {
-    TEEN_MAX_SPICINESS, TEEN_HIDDEN_MODES, isTeenCard, teenCards, fullCards, nonTeenKeys, teenStrings, fullStrings, cardKeys
+    TEEN_MAX_SPICINESS, TEEN_SAFE_SPICINESS, TEEN_HIDDEN_MODES, CHOICE_PATTERNS, isTeenCard, teenCards, fullCards, nonTeenKeys, teenStrings, fullStrings, cardKeys
 } from '../../src/logic/edition';
 import { alcoholPattern, ALCOHOL_LANGUAGES } from '../../scripts/alcohol-words';
 
@@ -39,7 +39,14 @@ describe('teen cards', () => {
         // A teen text on a card that is left out anyway would be dead content.
         challenges.filter(c => typeof c.teen === 'string').forEach(c => expect(isTeenCard(c), c.id).toBe(true));
         // `teen: true` only makes sense above the default cap.
-        challenges.filter(c => c.teen === true).forEach(c => expect(c.spiciness, c.id).toBeGreaterThan(2));
+        challenges.filter(c => c.teen === true).forEach(c => expect(c.spiciness, c.id).toBeGreaterThan(TEEN_SAFE_SPICINESS));
+    });
+
+    it('are swipe choices exactly when their full version is', () => {
+        // e.g. "floor takes" once matched "or take" and turned a group statement into a penalty card.
+        const full = Object.fromEntries(challenges.map(c => [c.id, cardText(c)]));
+        const differing = teen.filter(c => CHOICE_PATTERNS.teen.test(cardText(c)) !== CHOICE_PATTERNS.full.test(full[c.id]));
+        expect(differing.map(c => `${c.id}: ${cardText(c)}`)).toEqual([]);
     });
 
     it('cover every mode the teen edition shows', () => {

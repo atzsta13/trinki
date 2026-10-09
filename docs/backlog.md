@@ -8,3 +8,4 @@ What is left. Everything here needs a person, a device or the native projects â€
 4. **Store ratings for the teen edition.** Fill in the IARC (Google Play) and Apple age-rating questionnaires from the teen build before translating more content; adjust cards if the result is above 13+. Answers and listing draft: [editions.md](editions.md).
 5. **Website for the full edition.** Hosting, Impressum, age-de label for German visitors ([editions.md](editions.md#website-release-full)).
 6. **Native speaker check of the teen texts** (`*_teen` keys), same as item 1.
+7. **Alcohol-free app icon for the stores.** The current icon shows the penguin with a cocktail glass; the teen edition needs a variant without it (also for `public/assets`, which ships in `dist-teen`).

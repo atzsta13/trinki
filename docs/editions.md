@@ -22,7 +22,7 @@ Why two builds instead of one app with an 18+ switch or downloadable packs: the 
 - `scripts/edition-plugin.js` rewrites `src/logic/challenges.js` and the locale files during the build:
   - **Cards:** a card is in the teen edition if its spiciness is ≤ 2, or ≤ 3 with `teen: true` or a teen text, and it isn't in the `hot`/`bar` packs. `teen: false` always leaves it out. `teen: '...'` replaces the English text.
   - **Strings:** `<key>_teen` replaces `<key>` (cards: `c_1_teen`, UI: `result_drink_teen`). Strings of left-out cards are dropped. The full build drops all `_teen` keys.
-- `__EDITION__` (`'teen'` or `'full'`) is defined for the few code paths that differ: hidden modes and the slider cap (`modes.js`), roasts, name suggestions (`names.json`: `everyone` vs. `adult`), choice detection in `GameScreen`.
+- `__EDITION__` (`'teen'` or `'full'`) is defined for the few code paths that differ: hidden modes and the slider cap (`modes.js`), roasts, name suggestions (`names.json`: `everyone` vs. `adult`), swipe-choice detection (`CHOICE_PATTERNS` in `edition.js`) and "finish your drink" in `GameScreen`, the first screen (`Disclaimer.jsx`) and its storage key (`App.jsx`: `house_rules_accepted` instead of `disclaimer_accepted`).
 - Unit tests (`tests/unit/edition.test.js`) check every language of the teen edition for alcohol vocabulary (`scripts/alcohol-words.js`), the spiciness cap and that every visible mode still has cards. `scripts/check-teen.js` (part of `npm run check`) scans the built `dist-teen` for alcohol words, full-edition cards and name puns, and leftover `_teen` keys. `tests/e2e/teen.spec.js` plays the real teen build.
 
 ## Adding content
@@ -38,7 +38,7 @@ Why two builds instead of one app with an 18+ switch or downloadable packs: the 
 
 Content rating questionnaire (IARC on Google Play, Apple's age rating): answer from what the teen build actually contains. No alcohol, drugs or tobacco; no sexual content; mild suggestive themes (vote cards like "Who is the best kisser?", truth questions about crushes); crude humour; no gambling; no user-generated content shared with others (custom cards and secrets stay on the device); no ads, purchases or data collection. Expect roughly PEGI 12 / USK 12 / Apple 13+, but only the questionnaire decides. Set the Play target audience to 13–15, 16–17 and 18+ (not under 13: that triggers the Families policy).
 
-Keep store screenshots, icon and texts free of alcohol (Apple requires 4+-safe metadata) and don't call it a drinking game.
+Keep store screenshots, icon and texts free of alcohol (Apple requires 4+-safe metadata) and don't call it a drinking game. **The current icon (`public/assets/icon-*.png`, `apple-touch-icon.png`) shows a penguin holding a cocktail glass**: the store edition needs an alcohol-free variant before release.
 
 ### Store listing draft
 

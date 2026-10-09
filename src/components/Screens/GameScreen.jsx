@@ -7,6 +7,7 @@ import SettingsModal from '../Shared/SettingsModal';
 import { triggerHaptic, HapticType } from '../../logic/haptics';
 import { playClick, playSuccess, playError, playPop } from '../../logic/sound';
 import { triggerConfetti, triggerEmojiBurst } from '../../logic/confetti';
+import { CHOICE_PATTERNS } from '../../logic/edition';
 
 const MINIGAMES = {
     bomb: lazy(() => import('../Games/BombGame')),
@@ -24,11 +25,7 @@ const TTS_LOCALES = {
 
 const SWIPE_THRESHOLD = 100; // px
 const SWIPE_VELOCITY = 0.5; // px/ms
-// Matched against the shown (translated) card text, so swipe choices are only detected in English.
-// The teen edition says "or take an ice cube" instead of "or drink".
-const CHOICE_PATTERN = __EDITION__ === 'teen'
-    ? /(or take|or penalty|if you refuse|if yes penalty|if yes take)/i
-    : /(or drink|or penalty|or finish|if you refuse|if yes, drink|if yes penalty|if yes take)/i;
+const CHOICE_PATTERN = CHOICE_PATTERNS[__EDITION__];
 
 // Drag-to-swipe for one card. Moves the element directly (no React render per pointer move);
 // past the threshold the card flies out and `onSwipe(direction)` is called.

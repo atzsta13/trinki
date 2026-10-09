@@ -37,7 +37,7 @@ describe('challenges', () => {
         // Every card needs English text, or a translation key that resolves in en.
         const hasText = Boolean(card.text || card.question || card.word || card.translationKey);
         expect(hasText).toBe(true);
-        expect([undefined, true, false]).toContain(typeof card.teen === 'string' ? undefined : card.teen);
+        expect(['undefined', 'boolean', 'string']).toContain(typeof card.teen);
     });
 
     it('taboo cards list forbidden words', () => {
