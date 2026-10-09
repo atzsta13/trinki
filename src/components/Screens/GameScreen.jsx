@@ -24,7 +24,8 @@ const TTS_LOCALES = {
 
 const SWIPE_THRESHOLD = 100; // px
 const SWIPE_VELOCITY = 0.5; // px/ms
-// Matched against the English card text; the teen edition says "or take an ice cube" instead of "or drink".
+// Matched against the shown (translated) card text, so swipe choices are only detected in English.
+// The teen edition says "or take an ice cube" instead of "or drink".
 const CHOICE_PATTERN = __EDITION__ === 'teen'
     ? /(or take|or penalty|if you refuse|if yes penalty|if yes take)/i
     : /(or drink|or penalty|or finish|if you refuse|if yes, drink|if yes penalty|if yes take)/i;

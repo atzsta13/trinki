@@ -93,7 +93,7 @@ public/                  icons, web manifest, privacy.html (store privacy policy
 4. `nextCard()` refills the deck when empty. Virus cards are also collected as "active rules".
 5. **Game over** shows the scoreboard; "Play again" relaunches with the same modes and resets scores.
 
-Persistence (`localStorage`, prefix `partypenguin_` from `logic/storage.js`): `players`, `settings`, `played_cards` (last 500 ids), `custom_cards`, `disclaimer_accepted`, `skipped_names`. Data saved under the old name (`trinki_*`) is migrated once on startup. The language is part of `trinki_settings`.
+Persistence (`localStorage`, prefix `partypenguin_` from `logic/storage.js`): `players`, `settings`, `played_cards` (last 500 ids), `custom_cards`, `disclaimer_accepted` (teen edition: `house_rules_accepted`), `skipped_names`. Data saved under the old name (`trinki_*`) is migrated once on startup. The language is part of `trinki_settings`.
 
 ## Common tasks
 

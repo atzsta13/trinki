@@ -1,4 +1,10 @@
+import fs from 'node:fs';
 import { defineConfig, devices } from '@playwright/test';
+
+// `vite preview` happily serves 404s from a missing folder; fail early with a hint instead.
+for (const dir of ['dist', 'dist-teen']) {
+    if (!fs.existsSync(`${dir}/index.html`)) throw new Error(`${dir}/ is missing – run \`npm run check\` (or build and build:teen) first.`);
+}
 
 // Runs against the production builds of both editions (`vite preview`) on a phone viewport.
 // Browser: `npx playwright install chromium`, or point PLAYWRIGHT_CHROMIUM_PATH at an installed Chromium.

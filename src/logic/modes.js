@@ -1,4 +1,6 @@
-import { TEEN_HIDDEN_MODES, TEEN_MAX_SPICINESS } from './edition';
+import { TEEN_MAX_SPICINESS } from './edition';
+
+const IS_TEEN = __EDITION__ === 'teen';
 
 // `id` is what gets stored in the selected modes and mapped to content packs in deck.js.
 // `label` is an i18n key; `labelFallback` is shown when the key isn't translated.
@@ -25,8 +27,11 @@ export const MODES = {
 
     // --- Social / vibes ---
     newFriends: { id: 'newFriends', label: 'mode_icebreaker', emoji: '🧊' },
-    hot: { id: 'closeFriends', label: 'mode_shots', emoji: '🌶️' },
-    bar: { id: 'bar', label: 'mode_bar', emoji: '🍻' },
+    // Full edition only (TEEN_HIDDEN_MODES in edition.js); the teen build doesn't contain them.
+    ...(IS_TEEN ? {} : {
+        hot: { id: 'closeFriends', label: 'mode_shots', emoji: '🌶️' },
+        bar: { id: 'bar', label: 'mode_bar', emoji: '🍻' }
+    }),
     warmUp: { id: 'warmUp', label: 'mode_pregame', emoji: '🏎️' },
     princess: { id: 'princess', label: 'n_princess', labelFallback: 'Princess Treatment', emoji: '👑' },
 
@@ -58,10 +63,7 @@ export const PARTY_MODES = [
     MODES.fakeOrFact
 ];
 
-const IS_TEEN = __EDITION__ === 'teen';
-
-export const SOCIAL_MODES = [MODES.newFriends, MODES.hot, MODES.bar, MODES.warmUp, MODES.princess]
-    .filter(m => !IS_TEEN || !TEEN_HIDDEN_MODES.includes(m.id));
+export const SOCIAL_MODES = [MODES.newFriends, MODES.hot, MODES.bar, MODES.warmUp, MODES.princess].filter(Boolean);
 export const SEASONAL_MODES = [MODES.christmas, MODES.newYear, MODES.beach, MODES.halloween];
 
 /** Highest level of the spiciness slider in this edition. */

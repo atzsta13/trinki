@@ -47,7 +47,7 @@ export const GameProvider = ({ children }) => {
   const [settings, setSettings] = useState(() => {
     const saved = { spicyLevel: 3, soundEnabled: true, hapticsEnabled: true, ...loadJSON(STORAGE_KEYS.settings, {}) };
     // A level saved by a spicier edition must not outlive the switch to the teen edition.
-    return { ...saved, spicyLevel: Math.min(saved.spicyLevel, MAX_SPICINESS), language: getLanguage() };
+    return { ...saved, spicyLevel: Math.min(saved.spicyLevel ?? 3, MAX_SPICINESS), language: getLanguage() };
   });
   const [playedCards, setPlayedCards] = useState(() => loadJSON(STORAGE_KEYS.playedCards, []));
   const [customCards, setCustomCards] = useState(() => loadJSON(STORAGE_KEYS.customCards, []));

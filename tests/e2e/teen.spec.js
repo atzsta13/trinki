@@ -19,7 +19,7 @@ test('first start shows the ice-cube house rules and the no-subscription promise
 test.describe('after the house rules', () => {
     test.beforeEach(async ({ page }) => {
         await page.addInitScript(() => {
-            localStorage.setItem('partypenguin_disclaimer_accepted', 'true');
+            localStorage.setItem('partypenguin_house_rules_accepted', 'true');
             // A level saved by the full edition is capped.
             localStorage.setItem('partypenguin_settings', JSON.stringify({ spicyLevel: 6 }));
             localStorage.setItem('partypenguin_players', JSON.stringify(
@@ -36,6 +36,23 @@ test.describe('after the house rules', () => {
         await expect(page.locator('.mode-card', { hasText: /^🌶️\s*Spicy$/ })).toHaveCount(0);
         await expect(page.locator('.mode-card', { hasText: 'Bar' })).toHaveCount(0);
         await expect(page.locator('.mode-card', { hasText: 'Warm-Up' })).toBeVisible();
+    });
+
+    test('explains instead of starting when the packs have no cards at this spiciness', async ({ page }) => {
+        await page.goto('/');
+        const active = page.locator('.mode-card.active');
+        for (let n = await active.count(); n > 0; n--) {
+            await active.first().click();
+            await expect(active).toHaveCount(n - 1);
+        }
+        await page.locator('.mode-card', { hasText: 'Taboo' }).click();
+        await page.locator('.spicy-step').first().click();
+        await expect(page.getByText(/no cards for these packs/i)).toBeVisible();
+        await expect(page.getByRole('button', { name: /•/ })).toBeDisabled();
+        await page.locator('.spicy-step').last().click();
+        await expect(page.getByText(/no cards for these packs/i)).toHaveCount(0);
+        await page.getByRole('button', { name: /•/ }).click();
+        await expect(page.locator('[data-card]')).toBeVisible();
     });
 
     test('plays 30 cards with every pack on and never mentions drinking', async ({ page }) => {
