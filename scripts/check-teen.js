@@ -4,11 +4,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { challenges } from '../src/logic/challenges.js';
-import { nonTeenKeys } from '../src/logic/edition.js';
+import { isTeenCard, nonTeenKeys } from '../src/logic/edition.js';
 import { alcoholPattern } from './alcohol-words.js';
 import names from '../src/logic/names.json' with { type: 'json' };
 
-const assets = path.resolve(import.meta.dirname, '../dist-teen/assets');
+// Usage: node scripts/check-teen.js [dist-teen]. Pointing it at dist (the full edition) must fail.
+const assets = path.resolve(import.meta.dirname, '..', process.argv[2] || 'dist-teen', 'assets');
 const chunks = fs.readdirSync(assets).filter(f => f.endsWith('.js')).map(f => [f, fs.readFileSync(path.join(assets, f), 'utf8')]);
 const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // String literals only, so identifiers like `drinkCount` and regexes in the game logic don't count.
@@ -16,6 +17,9 @@ const STRING = /`(?:[^`\\]|\\.)*`|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/g;
 
 // i18n keys like `mode_shots` are names, not text; so is the CSS class of the streak toast.
 const KEY = /^.[a-z0-9]+(?:_[a-z0-9]+)+.$|^.toast.$/;
+
+const dropped = nonTeenKeys(challenges);
+const adultIds = new Set(challenges.filter(c => !isTeenCard(c)).map(c => c.id));
 
 const problems = [];
 for (const [file, code] of chunks) {
@@ -32,10 +36,11 @@ for (const [file, code] of chunks) {
     for (const name of names.adult) {
         if (code.includes(name)) problems.push(`${file}: full-edition name suggestion "${name}"`);
     }
-    for (const key of nonTeenKeys(challenges)) {
-        // As an object key (`nhie_3:` / `"1010_3":`) or as a card id (`nhie_3`).
-        if (new RegExp(`(?<![\\w$])(?:["'\`]?${escape(key)}["'\`]?:|\`${escape(key)}\`)`).test(code)) {
-            problems.push(`${file}: full-edition card "${key}"`);
+    for (const key of dropped) {
+        // As a string key (`nhie_3:` / `"1010_3":`) or, for cards, as their id (`nhie_3`).
+        const asId = adultIds.has(key) ? `|\`${escape(key)}\`` : '';
+        if (new RegExp(`(?<![\\w$])(?:["'\`]?${escape(key)}["'\`]?:${asId})`).test(code)) {
+            problems.push(`${file}: full-edition content "${key}"`);
         }
     }
 }
