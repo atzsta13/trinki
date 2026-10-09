@@ -302,7 +302,11 @@ const GameScreen = () => {
         return card.text || '';
     };
 
+    // Derived null-safely: while leaving the game the screen still renders once with no card,
+    // and the React Compiler reads values used by handlers during render.
     const currentText = getCardText(currentCard);
+    const targetPlayerId = currentCard?.targetPlayerId;
+    const cardPoints = currentCard?.points || currentCard?.sips;
 
     useEffect(() => {
         if (!('speechSynthesis' in window)) return;
@@ -315,11 +319,11 @@ const GameScreen = () => {
     }, [currentText, ttsEnabled, settings.language]);
 
     const handleCardResult = (success) => {
-        if (!currentCard?.targetPlayerId) return;
-        updatePlayerStreak(currentCard.targetPlayerId, success);
+        if (!targetPlayerId) return;
+        updatePlayerStreak(targetPlayerId, success);
         if (!success) return;
 
-        const player = players.find(p => p.id === currentCard.targetPlayerId);
+        const player = players.find(p => p.id === targetPlayerId);
         const newStreak = (player?.streak || 0) + 1;
         if (!player || newStreak < 3) return;
 
@@ -337,13 +341,12 @@ const GameScreen = () => {
 
     // Truth/dare and "... or drink" cards are resolved by swiping: right = done, left = penalty.
     const isChoiceCard = () => {
-        if (!currentCard) return false;
-        if (currentCard.type === 'truth' || currentCard.type === 'dare') return true;
+        if (currentCard?.type === 'truth' || currentCard?.type === 'dare') return true;
         return CHOICE_PATTERN.test(currentText);
     };
 
     const getPenaltyAmount = () => {
-        if (currentCard.points || currentCard.sips) return currentCard.points || currentCard.sips;
+        if (cardPoints) return cardPoints;
         const text = currentText.toLowerCase();
         const match = text.match(/(?:drink|penalty|points|take|lose) (\d+)/i);
         if (match) return parseInt(match[1], 10);
@@ -355,8 +358,8 @@ const GameScreen = () => {
         if (tookPenalty) {
             playError();
             triggerHaptic(HapticType.HEAVY);
-            if (currentCard.targetPlayerId) {
-                updatePlayerDrinkCount(currentCard.targetPlayerId, getPenaltyAmount());
+            if (targetPlayerId) {
+                updatePlayerDrinkCount(targetPlayerId, getPenaltyAmount());
             }
         } else {
             playSuccess();
@@ -397,16 +400,19 @@ const GameScreen = () => {
     if (Minigame) {
         const onNext = () => { playSuccess(); nextCard(); };
         return (
-            <Suspense fallback={null}>
-                <Minigame key={currentCard.instanceId} card={currentCard} onNext={onNext} />
-            </Suspense>
+            <div className="full-screen" data-card={currentCard.instanceId}>
+                <Suspense fallback={null}>
+                    <Minigame key={currentCard.instanceId} card={currentCard} onNext={onNext} />
+                </Suspense>
+            </div>
         );
     }
 
     const choiceCard = isChoiceCard();
 
     return (
-        <div className="full-screen" style={{
+        // data-card lets the e2e tests see exactly when the next card is dealt.
+        <div className="full-screen" data-card={currentCard.instanceId} style={{
             display: 'flex',
             flexDirection: 'column',
             position: 'relative',

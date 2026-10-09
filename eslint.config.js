@@ -14,5 +14,9 @@ export default [
       globals: { ...globals.browser, __APP_VERSION__: 'readonly' },
       parserOptions: { ecmaFeatures: { jsx: true } }
     }
+  },
+  {
+    files: ['scripts/**', 'tests/**', '*.config.js'],
+    languageOptions: { globals: globals.node }
   }
 ]

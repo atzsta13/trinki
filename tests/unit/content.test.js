@@ -72,6 +72,20 @@ describe('locales', () => {
         return c.type === 'darkTales' ? [`${key}_title`, `${key}_story`, `${key}_solution`] : [key];
     }));
 
+    it('every t() key used in the code exists in English', () => {
+        const srcDir = path.resolve(import.meta.dirname, '../../src');
+        const code = fs.readdirSync(srcDir, { recursive: true })
+            .filter(f => /\.jsx?$/.test(f))
+            .map(f => fs.readFileSync(path.join(srcDir, f), 'utf8'))
+            .join('\n');
+        const used = new Set([
+            ...[...code.matchAll(/\bt\(\s*'(\w+)'/g)].map(m => m[1]),
+            ...Object.values(MODES).map(m => m.label).filter(label => !Object.values(MODES).find(x => x.label === label)?.labelFallback)
+        ]);
+        const missing = [...used].filter(k => !(k in en) && !(k in enChallenges));
+        expect(missing).toEqual([]);
+    });
+
     it.each(LANGUAGES)('%s UI strings only use keys that exist in English', (lang) => {
         const unknown = Object.keys(readJson(`${lang}.json`)).filter(k => !(k in en));
         expect(unknown).toEqual([]);

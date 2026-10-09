@@ -17,14 +17,26 @@ Product rules that affect code and content:
 ```bash
 npm install
 npm run dev        # dev server
-npm run check      # lint + unit tests + production build — run before every commit
-npm run lint       # ESLint 10 incl. React Compiler rules
-npm run test       # Vitest: content/locale sanity checks + deck logic (<1 s)
-npm run build      # production build into dist/
+npm run check      # ~10 s: lint (0 warnings) + unit tests + build + bundle-size budget. Run after every change.
+npm run test:e2e   # ~30 s: Playwright on the production build (needs `npm run build` first)
+npm run verify     # check + e2e — what CI runs on every PR
 npm run cap:sync   # build + copy into the native projects
 ```
 
+E2E needs Chromium: `npx playwright install chromium`, or set `PLAYWRIGHT_CHROMIUM_PATH` to an installed one.
 Native builds (Android/iOS): see [docs/native-builds.md](docs/native-builds.md). `android/` and `ios/` are generated and not committed.
+
+## Verification pipeline
+
+| Layer | Where | Catches |
+| :--- | :--- | :--- |
+| ESLint + React Compiler rules | `eslint.config.js` | undefined vars, hook misuse, code the compiler can't optimize |
+| Unit tests | `tests/unit/` | broken cards, modes without packs, missing/unknown i18n keys, wrong placeholders, deck logic |
+| Size budget | `scripts/check-size.js` | start bundle > 180 KB gzip |
+| E2E | `tests/e2e/game.spec.js` | crashes, console errors, stuck cards, minigames without exit, raw i18n keys on screen, German UI |
+| CI | `.github/workflows/ci.yml` | runs `check` + e2e on every PR and push to main; traces uploaded on failure |
+
+E2E tests wait on `data-card` (the dealt card's `instanceId` on the game screen) instead of timeouts — keep that attribute. When you fix a bug, add the test that would have caught it. Never weaken or skip a test to get green.
 
 ## Stack
 
@@ -56,7 +68,9 @@ src/
   locales/
     <lang>.json          UI strings
     challenges/<lang>.json  card translations keyed by card id (+ Secrets/Dark Tales UI strings)
-tests/unit/              Vitest tests (content.test.js, deck.test.js)
+tests/unit/              Vitest: content.test.js (cards/modes/locales), deck.test.js
+tests/e2e/               Playwright: game.spec.js
+scripts/check-size.js    start-bundle size budget
 public/                  icons, web manifest, privacy.html (store privacy policy)
 ```
 
@@ -107,11 +121,12 @@ Persistence (`localStorage`): `trinki_players`, `trinki_settings`, `trinki_playe
 - `fallbackNS: 'challenges'` in i18n.js: some UI strings (Secrets, Dark Tales) live in the challenges namespace.
 - Card `text` may contain `{{p1}}` etc. Translation happens in `Card`/`GameScreen` via `t('challenges:<id>', { ...args, defaultValue: text })`.
 - `instanceId` (not `id`) identifies a dealt card; React keys and the virus list use it.
+- The React Compiler reads values used in event handlers *during render* (as memo dependencies). Derive them null-safely (`currentCard?.x`) — while leaving the game, GameScreen renders once more with `currentCard === null`.
 - `__APP_VERSION__` is injected from `package.json` by Vite.
 - There is no backend and there must not be one without an explicit decision (offline + privacy promise).
 
 ## Before you commit
 
-`npm run check` must pass. For UI changes, also run `npm run dev` and click through setup → a few cards → a minigame on a phone-sized viewport.
+`npm run check` must pass; for UI or game-flow changes run `npm run verify`.
 
 Open problems and ideas: [docs/backlog.md](docs/backlog.md).
