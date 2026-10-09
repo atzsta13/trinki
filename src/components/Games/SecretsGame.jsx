@@ -1,10 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { motion } from 'motion/react';
 import { useGame } from '../../logic/GameContext';
 import { useTranslation } from 'react-i18next';
 import Button from '../Shared/Button';
 import { playPop, playSuccess, playClick } from '../../logic/sound';
 import { triggerHaptic, HapticType } from '../../logic/haptics';
+
+const shuffle = (list) => {
+    const result = [...list];
+    for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
+};
+
+const randomBetween = (min, max) => Math.random() * (max - min) + min;
+
+// Flight paths for the shuffle animation, rolled once so renders stay pure.
+const SHUFFLE_PATHS = Array.from({ length: 6 }, (_, i) => ({
+    x: [(i - 2.5) * 10, randomBetween(-150, 150), randomBetween(-150, 150), (i - 2.5) * 5],
+    y: [0, randomBetween(-100, 100), randomBetween(-100, 100), 0],
+    rotate: [i * 5, randomBetween(-360, 360), randomBetween(-360, 360), i * 2]
+}));
 
 const SecretsGame = ({ card, onNext }) => {
     const { players } = useGame();
@@ -49,23 +67,13 @@ const SecretsGame = ({ card, onNext }) => {
             setCurrentPlayerIndex(prev => prev + 1);
             setStage('pass');
         } else {
+            setShuffledAnswers(shuffle(newAnswers));
             setStage('shuffling');
             setTimeout(() => {
                 setStage('reveal');
             }, 3000);
         }
     };
-
-    useEffect(() => {
-        if (stage === 'reveal' && answers.length > 0) {
-            const shuffled = [...answers];
-            for (let i = shuffled.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-            }
-            setShuffledAnswers(shuffled);
-        }
-    }, [stage, answers]);
 
     const handleRevealAuthor = (index) => {
         if (revealedIndex === index) setRevealedIndex(null);
@@ -106,6 +114,7 @@ const SecretsGame = ({ card, onNext }) => {
                 </div>
 
                 <Button onClick={handleStart} variant="primary">Start</Button>
+                <Button onClick={onNext} variant="secondary">{t('skip_card')}</Button>
             </div>
         );
     }
@@ -179,28 +188,11 @@ const SecretsGame = ({ card, onNext }) => {
                 display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '20px'
             }}>
                 <div style={{ position: 'relative', width: '240px', height: '160px', perspective: '1000px' }}>
-                    {[...Array(6)].map((_, i) => (
+                    {SHUFFLE_PATHS.map((path, i) => (
                         <motion.div
                             key={i}
                             animate={{
-                                x: [
-                                    (i - 2.5) * 10,
-                                    Math.random() * 300 - 150,
-                                    Math.random() * 300 - 150,
-                                    (i - 2.5) * 5
-                                ],
-                                y: [
-                                    0,
-                                    Math.random() * 200 - 100,
-                                    Math.random() * 200 - 100,
-                                    0
-                                ],
-                                rotate: [
-                                    i * 5,
-                                    Math.random() * 720 - 360,
-                                    Math.random() * 720 - 360,
-                                    i * 2
-                                ],
+                                ...path,
                                 z: [0, 100, 200, 0],
                                 rotateY: [0, 180, 360, 0],
                                 rotateX: [0, 45, -45, 0]

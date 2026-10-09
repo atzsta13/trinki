@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Reorder } from 'framer-motion';
+import { useState } from 'react';
+import { Reorder } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import { useGame } from '../../logic/GameContext';

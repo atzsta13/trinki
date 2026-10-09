@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
+import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { triggerHaptic, HapticType } from '../../logic/haptics';
 import { useShake } from '../../logic/useShake';
@@ -88,7 +88,7 @@ const Card = ({ type, text, forbidden, spiciness, translationKey, args, onClick,
             clearInterval(voteIntervalRef.current);
             cancelAnimationFrame(precisionFrameRef.current);
         };
-    }, []);
+    }, [spiciness, type]);
 
     const handleVoteStart = (e) => {
         e.stopPropagation();
@@ -130,8 +130,8 @@ const Card = ({ type, text, forbidden, spiciness, translationKey, args, onClick,
     };
 
     useShake(15, () => {
-        if (type === 'shake' && !shakeResult && !isShaking) rollDice();
-    });
+        if (!shakeResult && !isShaking) rollDice();
+    }, type === 'shake');
 
     const handleReflexTap = () => {
         if (reflexState === 'waiting') {
@@ -467,8 +467,7 @@ const Card = ({ type, text, forbidden, spiciness, translationKey, args, onClick,
                                     border: '1px solid rgba(255,255,255,0.15)',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '6px',
-                                    backdropFilter: 'blur(5px)'
+                                    gap: '6px'
                                 }}
                             >
                                 <span style={{ fontSize: '0.9rem', opacity: 0.8 }}>{pill.icon}</span>
