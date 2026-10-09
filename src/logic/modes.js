@@ -1,3 +1,5 @@
+import { TEEN_HIDDEN_MODES, TEEN_MAX_SPICINESS } from './edition';
+
 // `id` is what gets stored in the selected modes and mapped to content packs in deck.js.
 // `label` is an i18n key; `labelFallback` is shown when the key isn't translated.
 export const MODES = {
@@ -56,8 +58,14 @@ export const PARTY_MODES = [
     MODES.fakeOrFact
 ];
 
-export const SOCIAL_MODES = [MODES.newFriends, MODES.hot, MODES.bar, MODES.warmUp, MODES.princess];
+const IS_TEEN = __EDITION__ === 'teen';
+
+export const SOCIAL_MODES = [MODES.newFriends, MODES.hot, MODES.bar, MODES.warmUp, MODES.princess]
+    .filter(m => !IS_TEEN || !TEEN_HIDDEN_MODES.includes(m.id));
 export const SEASONAL_MODES = [MODES.christmas, MODES.newYear, MODES.beach, MODES.halloween];
+
+/** Highest level of the spiciness slider in this edition. */
+export const MAX_SPICINESS = IS_TEEN ? TEEN_MAX_SPICINESS : 6;
 
 // All party modes are on by default.
 export const DEFAULT_MODES = PARTY_MODES.map(m => m.id);

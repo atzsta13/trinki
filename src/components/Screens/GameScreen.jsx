@@ -24,7 +24,10 @@ const TTS_LOCALES = {
 
 const SWIPE_THRESHOLD = 100; // px
 const SWIPE_VELOCITY = 0.5; // px/ms
-const CHOICE_PATTERN = /(or drink|or penalty|or finish|if you refuse|if yes, drink|if yes penalty|if yes take)/i;
+// Matched against the English card text; the teen edition says "or take an ice cube" instead of "or drink".
+const CHOICE_PATTERN = __EDITION__ === 'teen'
+    ? /(or take|or penalty|if you refuse|if yes penalty|if yes take)/i
+    : /(or drink|or penalty|or finish|if you refuse|if yes, drink|if yes penalty|if yes take)/i;
 
 // Drag-to-swipe for one card. Moves the element directly (no React render per pointer move);
 // past the threshold the card flies out and `onSwipe(direction)` is called.
@@ -205,7 +208,7 @@ const GameScreen = () => {
         const text = currentText.toLowerCase();
         const match = text.match(/(?:drink|penalty|points|take|lose) (\d+)/);
         if (match) return parseInt(match[1], 10);
-        return text.includes('finish your drink') ? 5 : 1;
+        return __EDITION__ !== 'teen' && text.includes('finish your drink') ? 5 : 1;
     };
 
     const handleSwipe = (direction) => {

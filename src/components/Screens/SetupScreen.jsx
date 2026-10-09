@@ -4,12 +4,14 @@ import { useT } from '../../i18n';
 import Button from '../Shared/Button';
 import CustomCardInput from '../Shared/CustomCardInput';
 import SettingsModal from '../Shared/SettingsModal';
-import nameList from '../../logic/names.json';
-import { PARTY_MODES, SOCIAL_MODES, SEASONAL_MODES, DEFAULT_MODES } from '../../logic/modes';
+import { everyone, adult } from '../../logic/names.json';
+import { PARTY_MODES, SOCIAL_MODES, SEASONAL_MODES, DEFAULT_MODES, MAX_SPICINESS } from '../../logic/modes';
 import { triggerHaptic, HapticType } from '../../logic/haptics';
 import { STORAGE_PREFIX } from '../../logic/storage';
 
-const SPICY_EMOJIS = ['👶', '🧊', '🫣', '🍻', '🔥', '🥵', '☠️'];
+const SPICY_EMOJIS = ['👶', '🧊', '🫣', '🌶️', '🔥', '🥵', '☠️'].slice(0, MAX_SPICINESS + 1);
+// Drinking puns are for the full edition only; the teen build drops them.
+const nameList = __EDITION__ === 'teen' ? everyone : [...everyone, ...adult];
 const SKIPPED_NAMES_KEY = `${STORAGE_PREFIX}skipped_names`;
 
 const ModeGroup = ({ title, description, modes, selectedModes, onToggle }) => {
@@ -122,7 +124,7 @@ const SetupScreen = () => {
                         <input
                             type="range"
                             min="0"
-                            max="6"
+                            max={MAX_SPICINESS}
                             value={settings.spicyLevel}
                             onChange={(e) => changeSpice(Number(e.target.value))}
                             className="spicy-slider"

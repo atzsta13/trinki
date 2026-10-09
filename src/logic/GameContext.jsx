@@ -4,6 +4,7 @@ import { setSoundEnabled } from './sound';
 import { setHapticsEnabled } from './haptics';
 import { getLanguage, setLanguage as applyLanguage } from '../i18n';
 import { STORAGE_PREFIX } from './storage';
+import { MAX_SPICINESS } from './modes';
 
 const STORAGE_KEYS = {
   players: `${STORAGE_PREFIX}players`,
@@ -43,13 +44,11 @@ export const useGame = () => useContext(GameContext);
 
 export const GameProvider = ({ children }) => {
   const [players, setPlayers] = useState(() => loadJSON(STORAGE_KEYS.players, DEFAULT_PLAYERS));
-  const [settings, setSettings] = useState(() => ({
-    spicyLevel: 3,
-    soundEnabled: true,
-    hapticsEnabled: true,
-    ...loadJSON(STORAGE_KEYS.settings, {}),
-    language: getLanguage()
-  }));
+  const [settings, setSettings] = useState(() => {
+    const saved = { spicyLevel: 3, soundEnabled: true, hapticsEnabled: true, ...loadJSON(STORAGE_KEYS.settings, {}) };
+    // A level saved by a spicier edition must not outlive the switch to the teen edition.
+    return { ...saved, spicyLevel: Math.min(saved.spicyLevel, MAX_SPICINESS), language: getLanguage() };
+  });
   const [playedCards, setPlayedCards] = useState(() => loadJSON(STORAGE_KEYS.playedCards, []));
   const [customCards, setCustomCards] = useState(() => loadJSON(STORAGE_KEYS.customCards, []));
 

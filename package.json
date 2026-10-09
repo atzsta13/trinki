@@ -8,15 +8,17 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:teen": "vite --mode teen",
     "build": "vite build",
+    "build:teen": "vite build --mode teen --outDir dist-teen",
     "preview": "vite preview",
     "lint": "eslint . --max-warnings 0",
     "test": "vitest run",
-    "size": "node scripts/check-size.js",
-    "check": "npm run lint && npm run test && npm run build && npm run size",
+    "size": "node scripts/check-size.js dist && node scripts/check-size.js dist-teen && node scripts/check-teen.js",
+    "check": "npm run lint && npm run test && npm run build && npm run build:teen && npm run size",
     "test:e2e": "playwright test",
     "verify": "npm run check && npm run test:e2e",
-    "cap:sync": "vite build && cap sync"
+    "cap:sync": "npm run build:teen && cap sync"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.3",

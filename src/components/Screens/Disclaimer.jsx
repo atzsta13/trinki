@@ -13,6 +13,7 @@ const Disclaimer = ({ onAccept }) => {
                 <p>{t('disclaimer_drive')}</p>
             </div>
             <Button onClick={onAccept} className="full-width">{t('disclaimer_accept')}</Button>
+            <p className="muted small center">{t('free_forever')}</p>
         </div>
     );
 };
