@@ -70,7 +70,8 @@ src/
     Games/               one file per minigame; lazy-loaded; props: { card, onNext }. PassAndReveal = shared "pass the phone, tap to see your secret" step
   locales/
     <lang>.json          UI strings
-    challenges/<lang>.json  card translations keyed by card id (+ Secrets/Dark Tales UI strings)
+    challenges/<lang>.json  card translations keyed by card id
+    words/<lang>.json    minigame word lists (shared categories for Spy/Fake Artist, bomb topics, panic prompts, charades)
 tests/unit/              Vitest: content.test.js (cards/modes/locales), deck.test.js
 tests/e2e/               Playwright: game.spec.js
 scripts/check-size.js    start-bundle size budget
@@ -100,7 +101,7 @@ Persistence (`localStorage`, prefix `partypenguin_` from `logic/storage.js`): `p
 
 **Add a UI string:** use `t('key')` and add the key to **every** `locales/<lang>.json` (English is the source of truth). The tests enforce that all 10 languages are complete.
 
-**Add a language:** add `locales/<lang>.json` + `locales/challenges/<lang>.json`, add it to `SUPPORTED_LANGUAGES` (i18n.js), `LANGUAGES` (SettingsModal.jsx) and `TTS_LOCALES` (GameScreen.jsx).
+**Add a language:** add `locales/<lang>.json`, `locales/challenges/<lang>.json` and `locales/words/<lang>.json`, add it to `SUPPORTED_LANGUAGES` (i18n.js), `LANGUAGES` (SettingsModal.jsx) and `TTS_LOCALES` (GameScreen.jsx).
 
 ## Conventions
 
@@ -108,7 +109,7 @@ Persistence (`localStorage`, prefix `partypenguin_` from `logic/storage.js`): `p
 - Follow the React Compiler rules that `npm run lint` enforces: no `Math.random()`/`Date.now()` during render, no reading/writing `ref.current` during render, no `setState` directly inside effects; put side effects in event handlers or effects, never inside state updater functions.
 - State lives in `GameContext`; components keep only local UI state.
 - Styling: use the classes in `index.css` (layout helpers like `screen`, `stack`, `row`, text helpers like `muted`, `big`, `accent`). Inline `style` only for values computed at runtime (e.g. finger position).
-- Translations: `const t = useT();` then `t('key')` / `t('key', { name })`. Keys must be string literals so the tests can check them.
+- Translations: `const t = useT();` then `t('key')` / `t('key', { name })`; word lists via `t.words`. Keys must be string literals so the tests can check them.
 - English is the source language for content. All 10 languages are complete for UI and cards, and must stay that way.
 - Keep comments for the *why*, not the *what*. Match the surrounding style (4-space indent in `src/`, single quotes).
 

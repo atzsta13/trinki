@@ -117,3 +117,19 @@ describe('locales', () => {
         Object.entries(cards).forEach(([key, value]) => expect(placeholders(value), key).toBe(placeholders(cardSource[key] || '')));
     });
 });
+
+describe('minigame word lists', () => {
+    const words = (lang) => readJson(`words/${lang}.json`);
+    const en = words('en');
+
+    it.each(LANGUAGES)('%s has the same lists as English, without blanks or duplicates', (lang) => {
+        const w = words(lang);
+        expect(w.categories.map(c => c.words.length)).toEqual(en.categories.map(c => c.words.length));
+        ['bomb', 'panic', 'charades'].forEach(list => expect(w[list].length, list).toBe(en[list].length));
+        const lists = [...w.categories.map(c => [c.name, ...c.words]), w.bomb, w.panic, w.charades];
+        lists.forEach(list => {
+            list.forEach(item => expect(item.trim().length).toBeGreaterThan(0));
+            expect(new Set(list).size, list[0]).toBe(list.length);
+        });
+    });
+});

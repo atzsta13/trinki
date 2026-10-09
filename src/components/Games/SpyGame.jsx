@@ -10,18 +10,6 @@ const DISCUSS_SECONDS = 180;
 const pickRandom = (list) => list[Math.floor(Math.random() * list.length)];
 const formatTime = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
-const SPY_WORDS = [
-    { category: "Locations", words: ["Beach", "Hospital", "School", "Police Station", "Supermarket", "Cinema", "Airplane", "Gym", "Library", "Zoo", "Casino", "Church", "Bank", "Hotel", "Restaurant", "Museum", "Graveyard", "Space Station", "Submarine", "Cruise Ship", "Farm", "Circus", "Bowling Alley", "Stadium"] },
-    { category: "Objects", words: ["Toaster", "Toothbrush", "Laptop", "Bicycle", "Umbrella", "Shoe", "Guitar", "Spoon", "Toilet", "Microwave", "Remote", "Pillow", "Chair", "Table", "Lamp", "Clock", "Mirror", "Keys", "Wallet", "Phone", "Camera", "Headphones", "Glasses", "Watch"] },
-    { category: "Jobs", words: ["Doctor", "Teacher", "Pilot", "Chef", "Firefighter", "Artist", "Programmer", "Spy", "Police Officer", "Nurse", "Lawyer", "Dentist", "Plumber", "Electrician", "Mechanic", "Farmer", "Astronaut", "Actor", "Singer", "Dancer", "Writer", "Scientist", "Athlete", "Politician"] },
-    { category: "Movies", words: ["Titanic", "Star Wars", "Jurassic Park", "Harry Potter", "The Avengers", "Frozen", "The Lion King", "Finding Nemo", "Shrek", "Toy Story", "Avatar", "The Matrix", "Inception", "Joker", "Black Panther", "Spider-Man", "Batman", "Superman", "Wonder Woman", "Iron Man"] },
-    { category: "Historical", words: ["World War II", "Ancient Egypt", "The Moon Landing", "The Titanic", "The wild West", "Medieval Times", "The Renaissance", "The Ice Age", "The Victorian Era", "The Roaring 20s", "The Great Depression", "The Cold War", "The French Revolution", "The Roman Empire", "The Viking Age"] },
-    { category: "Hobbies", words: ["Gardening", "Cooking", "Painting", "Drawing", "Singing", "Dancing", "Photography", "Reading", "Writing", "Gaming", "Hiking", "Camping", "Fishing", "Hunting", "Knitting", "Sewing", "Surfing", "Skiing", "Snowboarding", "Skateboarding"] },
-    { category: "Brands", words: ["Apple", "Samsung", "Nike", "Adidas", "Coca-Cola", "Pepsi", "McDonalds", "Burger King", "Amazon", "Google", "Facebook", "Instagram", "Twitter", "TikTok", "YouTube", "Netflix", "Spotify", "Disney", "Tesla", "Microsoft"] },
-    { category: "Sports", words: ["Soccer", "Basketball", "Tennis", "Golf", "Volleyball", "Baseball", "Football", "Rugby", "Cricket", "Hockey", "Boxing", "Swimming", "Cycling", "Running", "Skiing", "Surfing", "Skateboarding", "Wrestling", "Gymnastics", "Karate"] },
-    { category: "Holidays", words: ["Christmas", "Halloween", "Easter", "Thanksgiving", "New Year", "Valentine's Day", "Hanukkah", "Ramadan", "Diwali", "Kwanzaa", "St. Patrick's Day", "April Fools", "Mother's Day", "Father's Day", "Independence Day"] },
-];
-
 // Everyone but the spy sees the secret word; discuss, then vote who the spy is.
 const SpyGame = ({ onNext }) => {
     const { players } = useGame();
@@ -40,7 +28,7 @@ const SpyGame = ({ onNext }) => {
     }, [stage]);
 
     const start = () => {
-        setWord(pickRandom(pickRandom(SPY_WORDS).words));
+        setWord(pickRandom(pickRandom(t.words.categories).words));
         setSpyIndex(Math.floor(Math.random() * players.length));
         setPlayerIndex(0);
         setStage('reveal');
