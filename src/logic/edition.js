@@ -13,6 +13,8 @@ const TEEN_SAFE_SPICINESS = 2;
 /** Modes (and their content packs) that only exist in the full edition. */
 export const TEEN_HIDDEN_MODES = ['closeFriends', 'bar'];
 const TEEN_HIDDEN_PACKS = ['hot', 'bar'];
+/** UI strings the teen edition can't show (labels of hidden modes and slider levels), left out of its bundle. */
+const TEEN_HIDDEN_STRINGS = ['mode_shots', 'mode_bar', 'spicy_4', 'spicy_5', 'spicy_6'];
 
 const TEEN_SUFFIX = '_teen';
 
@@ -43,8 +45,8 @@ export const cardKeys = (card) => {
     return [key, `${key}_forbidden`, `${key}_title`, `${key}_story`, `${key}_solution`];
 };
 
-/** Translation keys of the cards that are not in the teen edition. */
-export const nonTeenKeys = (challenges) => new Set(challenges.filter(c => !isTeenCard(c)).flatMap(cardKeys));
+/** Translation keys that are not in the teen edition: its left-out cards and hidden UI strings. */
+export const nonTeenKeys = (challenges) => new Set([...challenges.filter(c => !isTeenCard(c)).flatMap(cardKeys), ...TEEN_HIDDEN_STRINGS]);
 
 /**
  * Teen strings: `<key>_teen` replaces `<key>`, then all `_teen` keys and the keys in `dropped` are removed.

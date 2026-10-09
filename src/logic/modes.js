@@ -20,7 +20,7 @@ export const MODES = {
     marryKissKill: { id: 'marryKissKill', label: 'n_mkk', labelFallback: 'Kiss, Marry, Kill', emoji: '💍' },
     mindMatch: { id: 'mindMatch', label: 'n_mindmatch', labelFallback: 'Mind Match', emoji: '🧠' },
     wrongAnswers: { id: 'wrongAnswers', label: 'n_wronganswers', labelFallback: 'Wrong Answers Only', emoji: '❌' },
-    betBuddy: { id: 'betBuddy', label: 'n_betbuddy', labelFallback: 'Bet Buddy', emoji: '🎰' },
+    betBuddy: { id: 'betBuddy', label: 'n_betbuddy', labelFallback: 'Bet Buddy', emoji: '🤝' },
     fakeOrFact: { id: 'fakeOrFact', label: 'n_fakeorfact', labelFallback: 'Fake or Fact', emoji: '🤥' },
 
     // --- Social / vibes ---

@@ -9,7 +9,7 @@
     { "name": "Transport", "words": ["Car", "Bus", "Train", "Plane", "Boat", "Bicycle", "Helicopter", "Submarine", "Rocket", "Tractor", "Motorcycle", "Skateboard"] },
     { "name": "Clothes", "words": ["T-shirt", "Dress", "Jacket", "Hat", "Scarf", "Gloves", "Socks", "Boots", "Sandals", "Belt", "Pyjamas", "Swimsuit"] },
     { "name": "Instruments", "words": ["Guitar", "Drums", "Violin", "Flute", "Trumpet", "Piano", "Saxophone", "Harp", "Accordion", "Ukulele", "Triangle", "Microphone"] },
-    { "name": "Celebrations", "words": ["Christmas", "Halloween", "Easter", "New Year", "Valentine's Day", "Birthday", "Wedding", "Carnival", "Oktoberfest", "Thanksgiving", "Graduation", "Bachelor party"] },
+    { "name": "Celebrations", "words": ["Christmas", "Halloween", "Easter", "New Year", "Valentine's Day", "Birthday", "Wedding", "Carnival", "Oktoberfest", "Thanksgiving", "Graduation", "Sleepover"] },
     { "name": "Movies", "words": ["Titanic", "Star Wars", "Jurassic Park", "Harry Potter", "Frozen", "The Lion King", "Finding Nemo", "Shrek", "Toy Story", "The Matrix", "Barbie", "Spider-Man"] },
     { "name": "Hobbies", "words": ["Gardening", "Cooking", "Painting", "Singing", "Dancing", "Photography", "Reading", "Gaming", "Hiking", "Camping", "Fishing", "Knitting"] }
   ],

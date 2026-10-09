@@ -67,7 +67,8 @@ const assignPlayers = (players) => {
     return { args, targetPlayerId: p1.id, secondaryPlayerId: p2.id };
 };
 
-export const getDeck = (mode, players, customCards = [], settings = {}, playedCards = []) => {
+// Every card that can be dealt for these modes and settings (no randomness, safe to call during render).
+const getPool = (mode, customCards, settings) => {
     const modes = Array.isArray(mode) ? mode : [mode];
     const targetPacks = new Set(modes.flatMap(m => MODE_PACKS[m] || ['classic']));
     const spicyLevel = settings.spicyLevel ?? 3;
@@ -88,8 +89,14 @@ export const getDeck = (mode, players, customCards = [], settings = {}, playedCa
     });
 
     // Custom cards are always in, regardless of spiciness.
-    pool = [...pool, ...customCards];
+    return [...pool, ...customCards];
+};
 
+/** Whether a game with these modes and settings has any card at all (e.g. not at spiciness 0 with only spicy packs). */
+export const hasCards = (mode, customCards = [], settings = {}) => getPool(mode, customCards, settings).length > 0;
+
+export const getDeck = (mode, players, customCards = [], settings = {}, playedCards = []) => {
+    const pool = getPool(mode, customCards, settings);
     const fresh = pool.filter(c => !playedCards.includes(c.id));
     const source = fresh.length > 0 ? fresh : pool;
     if (source.length === 0) return [];

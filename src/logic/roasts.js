@@ -15,7 +15,7 @@ const ROASTS = [
 
 // The teen edition gets its own penalty jokes; the build drops the unused list.
 const PENALTY_ROASTS = __EDITION__ === 'teen'
-    ? ["My grandma takes ice cubes faster than you.", "Take the ice cube, coward.", "Stay frosty, amateur."]
+    ? ["My grandma takes ice cubes faster than you.", "Ice, ice, baby. 🧊", "Stay frosty, amateur."]
     : ["My grandma drinks faster than you.", "Take the shot, coward.", "Drink water too, amateur."];
 
 const ALL_ROASTS = [...ROASTS, ...PENALTY_ROASTS];
