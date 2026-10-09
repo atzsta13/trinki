@@ -2,7 +2,7 @@
 // `label` is an i18n key; `labelFallback` is shown when the key isn't translated.
 export const MODES = {
     // --- Party ---
-    classic: { id: 'classic', label: 'mode_sips', emoji: '🦝' },
+    classic: { id: 'classic', label: 'mode_sips', emoji: '🐧' },
     mostLikely: { id: 'mostLikely', label: 'mode_most_likely', emoji: '👉' },
     neverHaveIEver: { id: 'neverHaveIEver', label: 'mode_nhie', emoji: '✋' },
     wouldYouRather: { id: 'wouldYouRather', label: 'mode_wyr', emoji: '🤔' },

@@ -272,7 +272,7 @@ const Card = ({ type, text, forbidden, spiciness, translationKey, args, onClick,
             <div className="card-title">{TYPE_EMOJI[type]} {t(`type_${type}`)}</div>
             {renderBody()}
 
-            {roast && type !== 'virus' && <div className="roast">🦝 <em>&quot;{roast}&quot;</em></div>}
+            {roast && type !== 'virus' && <div className="roast">🐧 <em>&quot;{roast}&quot;</em></div>}
             {sips > 0 && <div className="card-badge">⚡ {sips} {sips === 1 ? t('penalty') : t('penalties')}</div>}
             {isChoice && <p className="muted small swipe-hint">{t('swipe_hint')}</p>}
         </div>

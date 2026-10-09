@@ -7,9 +7,10 @@ import SettingsModal from '../Shared/SettingsModal';
 import nameList from '../../logic/names.json';
 import { PARTY_MODES, SOCIAL_MODES, SEASONAL_MODES, DEFAULT_MODES } from '../../logic/modes';
 import { triggerHaptic, HapticType } from '../../logic/haptics';
+import { STORAGE_PREFIX } from '../../logic/storage';
 
 const SPICY_EMOJIS = ['👶', '🧊', '🫣', '🍻', '🔥', '🥵', '☠️'];
-const SKIPPED_NAMES_KEY = 'trinki_skipped_names';
+const SKIPPED_NAMES_KEY = `${STORAGE_PREFIX}skipped_names`;
 
 const ModeGroup = ({ title, description, modes, selectedModes, onToggle }) => {
     const t = useT();
@@ -90,7 +91,7 @@ const SetupScreen = () => {
             <Button variant="icon" className="settings-button" onClick={() => setShowSettings(true)}>⚙️</Button>
 
             <div className="setup-inner">
-                <h2 className="accent center">🦝 Trinki</h2>
+                <h2 className="accent center">🐧 Party Penguin</h2>
 
                 <section className="stack">
                     <h3 className="section-title">{t('players')}</h3>

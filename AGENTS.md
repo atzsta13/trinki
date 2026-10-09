@@ -1,10 +1,10 @@
 # AGENTS.md
 
-Guide for AI coding agents (and humans) working on **Trinki**. Read this first; it is kept short on purpose.
+Guide for AI coding agents (and humans) working on **Party Penguin**. Read this first; it is kept short on purpose.
 
 ## What this is
 
-Trinki is an offline party/drinking card game for groups ("pass the phone"). Players are entered in seating order, the app deals cards ("Alex, drink if…", votes, truth or dare, taboo) and a few minigames (Bomb, Spy, Charades, Fake Artist, Secrets, Dark Tales). It is a React web app, shipped to Android/iOS via Capacitor.
+Party Penguin is an offline party/drinking card game for groups ("pass the phone"). Players are entered in seating order, the app deals cards ("Alex, drink if…", votes, truth or dare, taboo) and a few minigames (Bomb, Spy, Charades, Fake Artist, Secrets, Dark Tales). It is a React web app, shipped to Android/iOS via Capacitor.
 
 Product rules that affect code and content:
 - 100 % free, no ads, no accounts, no network calls, no tracking. Everything runs offline; state lives in `localStorage`.
@@ -58,7 +58,8 @@ src/
     challenges.js        the card catalogue (English text) — documented schema at the top
     modes.js             selectable modes shown on the setup screen
     names.json           random player-name suggestions (🎲 button)
-    roasts.js            random "raccoon" one-liners under cards
+    roasts.js            random penguin one-liners under cards
+    storage.js           localStorage key prefix + one-time migration from the old app name
     sound.js             synthesized sounds (Web Audio, no audio files)
     haptics.js           vibration via Capacitor Haptics
     confetti.js          canvas confetti / emoji bursts
@@ -87,7 +88,7 @@ public/                  icons, web manifest, privacy.html (store privacy policy
 4. `nextCard()` refills the deck when empty. Virus cards are also collected as "active rules".
 5. **Game over** shows the scoreboard; "Play again" relaunches with the same modes and resets scores.
 
-Persistence (`localStorage`): `trinki_players`, `trinki_settings`, `trinki_played_cards` (last 500 ids), `trinki_custom_cards`, `trinki_disclaimer_accepted`, `trinki_skipped_names`. The language is part of `trinki_settings`.
+Persistence (`localStorage`, prefix `partypenguin_` from `logic/storage.js`): `players`, `settings`, `played_cards` (last 500 ids), `custom_cards`, `disclaimer_accepted`, `skipped_names`. Data saved under the old name (`trinki_*`) is migrated once on startup. The language is part of `trinki_settings`.
 
 ## Common tasks
 

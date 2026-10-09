@@ -3,12 +3,13 @@ import { getDeck } from './deck';
 import { setSoundEnabled } from './sound';
 import { setHapticsEnabled } from './haptics';
 import { getLanguage, setLanguage as applyLanguage } from '../i18n';
+import { STORAGE_PREFIX } from './storage';
 
 const STORAGE_KEYS = {
-  players: 'trinki_players',
-  settings: 'trinki_settings',
-  playedCards: 'trinki_played_cards',
-  customCards: 'trinki_custom_cards'
+  players: `${STORAGE_PREFIX}players`,
+  settings: `${STORAGE_PREFIX}settings`,
+  playedCards: `${STORAGE_PREFIX}played_cards`,
+  customCards: `${STORAGE_PREFIX}custom_cards`
 };
 
 // Only remember the most recent cards so localStorage doesn't grow forever.

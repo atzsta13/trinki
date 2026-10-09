@@ -62,7 +62,7 @@ const SettingsModal = ({ onClose }) => {
                 </Button>
             )}
 
-            <p className="muted small center">Trinki {t('version')} {__APP_VERSION__}</p>
+            <p className="muted small center">Party Penguin {t('version')} {__APP_VERSION__}</p>
         </div>
     );
 };

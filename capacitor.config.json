@@ -1,6 +1,6 @@
 {
-  "appId": "com.trinki.game",
-  "appName": "Trinki",
+  "appId": "com.partypenguin.game",
+  "appName": "Party Penguin",
   "webDir": "dist",
   "android": {
     "webContentsDebuggingEnabled": false

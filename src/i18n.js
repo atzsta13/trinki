@@ -1,6 +1,7 @@
 // Tiny i18n: one flat key → string map per language, English as fallback, {{var}} interpolation.
 // UI strings live in locales/<lang>.json, card translations in locales/challenges/<lang>.json (keyed by card id).
 import { useSyncExternalStore } from 'react';
+import { STORAGE_PREFIX } from './logic/storage';
 
 export const SUPPORTED_LANGUAGES = ['en', 'de', 'es', 'fr', 'it', 'pt', 'nl', 'pl', 'tr', 'sv'];
 
@@ -39,7 +40,7 @@ export const setLanguage = async (lang) => {
 
 const detectLanguage = () => {
     try {
-        const saved = JSON.parse(localStorage.getItem('trinki_settings') || '{}').language;
+        const saved = JSON.parse(localStorage.getItem(`${STORAGE_PREFIX}settings`) || '{}').language;
         if (SUPPORTED_LANGUAGES.includes(saved)) return saved;
     } catch {
         // ignore broken storage
