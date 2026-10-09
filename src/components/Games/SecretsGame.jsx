@@ -1,20 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useGame } from '../../logic/GameContext';
 import { useTranslation } from 'react-i18next';
 import Button from '../Shared/Button';
 import { playPop, playSuccess, playClick } from '../../logic/sound';
 import { triggerHaptic, HapticType } from '../../logic/haptics';
 
-const SecretsGame = () => {
-    const { players, nextCard, currentCard } = useGame();
+const SecretsGame = ({ card, onNext }) => {
+    const { players } = useGame();
     const { t } = useTranslation();
 
     const [stage, setStage] = useState('intro');
     const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
-    const [answers, setAnswers] = useState([]); const [currentInput, setCurrentInput] = useState('');
+    const [answers, setAnswers] = useState([]);
+    const [currentInput, setCurrentInput] = useState('');
+    const [shuffledAnswers, setShuffledAnswers] = useState([]);
     const [revealedIndex, setRevealedIndex] = useState(null);
-    const question = currentCard.text || t(`challenges:${currentCard.translationKey}`) || t('secrets_sec_fear');
+    const question = t(`challenges:${card.translationKey}`);
 
     const currentPlayer = players[currentPlayerIndex];
 
@@ -54,7 +56,6 @@ const SecretsGame = () => {
         }
     };
 
-    const [shuffledAnswers, setShuffledAnswers] = useState([]);
     useEffect(() => {
         if (stage === 'reveal' && answers.length > 0) {
             const shuffled = [...answers];
@@ -70,11 +71,6 @@ const SecretsGame = () => {
         if (revealedIndex === index) setRevealedIndex(null);
         else setRevealedIndex(index);
         playPop();
-    };
-
-    const handleFinish = () => {
-        playClick();
-        nextCard();
     };
 
 
@@ -109,7 +105,7 @@ const SecretsGame = () => {
                     "{question}"
                 </div>
 
-                <Button onClick={handleStart} variant="primary" size="large">Start</Button>
+                <Button onClick={handleStart} variant="primary">Start</Button>
             </div>
         );
     }
@@ -306,7 +302,7 @@ const SecretsGame = () => {
                     position: 'absolute', bottom: 0, left: 0, width: '100%',
                     padding: '20px', background: 'linear-gradient(to top, rgba(0,0,0,1), transparent)'
                 }}>
-                    <Button onClick={handleFinish} fullWidth variant="secondary">{t('secrets_btn_finish')}</Button>
+                    <Button onClick={onNext} fullWidth variant="secondary">{t('secrets_btn_finish')}</Button>
                 </div>
             </div>
         );

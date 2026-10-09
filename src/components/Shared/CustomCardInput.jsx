@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useGame } from '../../logic/GameContext';
 import Button from '../Shared/Button';
 
 const CustomCardInput = () => {
     const { customCards, addCustomCard, removeCustomCard } = useGame();
+    const { t } = useTranslation();
     const [text, setText] = useState('');
 
     const handleAdd = (e) => {
@@ -16,14 +18,14 @@ const CustomCardInput = () => {
 
     return (
         <div style={{ width: '100%', marginTop: '20px' }}>
-            <h3 className="setup-title">Custom Cards</h3>
+            <h3 className="setup-title">{t('custom_cards')}</h3>
 
             <form onSubmit={handleAdd} style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
                 <input
                     type="text"
                     value={text}
                     onChange={(e) => setText(e.target.value)}
-                    placeholder="Add your own rule..."
+                    placeholder={t('custom_card_placeholder')}
                     className="input-field"
                     style={{
                         flex: 1,
@@ -32,7 +34,7 @@ const CustomCardInput = () => {
                         fontSize: '1rem'
                     }}
                 />
-                <Button onClick={handleAdd} type="submit" variant="secondary" style={{ padding: '15px', minWidth: '60px', border: '2px solid var(--color-primary)', color: 'var(--color-primary)' }}>+</Button>
+                <Button type="submit" variant="secondary" style={{ padding: '15px', minWidth: '60px', border: '2px solid var(--color-primary)', color: 'var(--color-primary)' }}>+</Button>
             </form>
 
             <div style={{ maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -42,7 +44,7 @@ const CustomCardInput = () => {
                         <span onClick={() => removeCustomCard(card.id)} style={{ color: '#ff0055', cursor: 'pointer', fontWeight: 'bold', padding: '5px' }}>✕</span>
                     </div>
                 ))}
-                {customCards.length === 0 && <p style={{ opacity: 0.5, fontSize: '0.9rem', fontStyle: 'italic', margin: 0 }}>No custom cards active.</p>}
+                {customCards.length === 0 && <p style={{ opacity: 0.5, fontSize: '0.9rem', fontStyle: 'italic', margin: 0 }}>{t('no_custom_cards')}</p>}
             </div>
         </div>
     );

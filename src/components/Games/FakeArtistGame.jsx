@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useGame } from '../../logic/GameContext';
 import Button from '../Shared/Button';
-import { useTranslation } from 'react-i18next';
 
 const CATEGORIES = [
     { name: "Animals", items: ["Cat", "Dog", "Elephant", "Giraffe", "Raccoon", "Snake", "Lion", "Tiger", "Bear", "Shark", "Whale", "Dolphin", "Bird", "Spider", "Frog", "Turtle", "Monkey", "Cow", "Pig", "Horse"] },
@@ -15,8 +15,8 @@ const CATEGORIES = [
     { name: "Instruments", items: ["Guitar", "Drums", "Violin", "Flute", "Trumpet", "Piano", "Saxophone", "Clarinet", "Harp", "Cello", "Banjo", "Ukulele", "Accordion", "Trombone", "Tuba"] },
 ];
 
-const FakeArtistGame = () => {
-    const { players, goHome } = useGame();
+const FakeArtistGame = ({ onNext }) => {
+    const { players } = useGame();
     const { t } = useTranslation();
 
     const [gameState, setGameState] = useState('setup');
@@ -26,10 +26,8 @@ const FakeArtistGame = () => {
     const [categoryName, setCategoryName] = useState('');
     const [isRevealing, setIsRevealing] = useState(false);
 
-    // Canvas Refs
     const canvasRef = useRef(null);
     const [isDrawing, setIsDrawing] = useState(false);
-    const [drawingHistory, setDrawingHistory] = useState([]);
 
     const startGame = () => {
         const cat = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
@@ -49,23 +47,19 @@ const FakeArtistGame = () => {
 
     const handleNext = () => {
         setIsRevealing(false);
-        // After reveal, go to DRAW
         setGameState('draw');
     };
 
     const finishTurn = () => {
-        // Next player
+        // One line per player, then the group discusses who the fake was.
         if (currentPlayerIndex < players.length - 1) {
             setCurrentPlayerIndex(p => p + 1);
             setGameState('reveal');
         } else {
-            // Everyone has gone once. 
-            // Usually Fake Artist is 2 rounds. Let's do 1 round for MVP speed.
             setGameState('discuss');
         }
     };
 
-    // Canvas Logic
     const startDraw = ({ nativeEvent }) => {
         const { offsetX, offsetY } = getCoordinates(nativeEvent);
         const ctx = canvasRef.current.getContext('2d');
@@ -89,7 +83,6 @@ const FakeArtistGame = () => {
     };
 
     const getCoordinates = (nativeEvent) => {
-        // Handle Trace/Touch
         if (nativeEvent.touches && nativeEvent.touches.length > 0) {
             const touch = nativeEvent.touches[0];
             const rect = canvasRef.current.getBoundingClientRect();
@@ -103,13 +96,9 @@ const FakeArtistGame = () => {
 
     useEffect(() => {
         if (gameState === 'draw' || gameState === 'discuss') {
-            // Re-init canvas context properties
+            // The canvas stays mounted (hidden via CSS) so the drawing survives between turns.
             const canvas = canvasRef.current;
             if (canvas) {
-                // We don't want to clear it, we want to Keep it!
-                // React might unmount/remount. We need to save the image data?
-                // For this simple implementation, let's hope the component stays mounted. 
-                // It does because we are just changing state inside FakeArtistGame.
                 const ctx = canvas.getContext('2d');
                 ctx.lineWidth = 3;
                 ctx.lineCap = 'round';
@@ -125,7 +114,7 @@ const FakeArtistGame = () => {
             <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', padding: '10px', alignItems: 'center' }}>
                 <span style={{ fontWeight: 'bold' }}>🎨 Fake Artist</span>
                 {gameState !== 'setup' && <span>Player: {players[currentPlayerIndex]?.name}</span>}
-                <Button onClick={goHome} variant="secondary" style={{ padding: '5px 10px', minWidth: 'auto', fontSize: '1rem' }}>✕</Button>
+                <Button onClick={onNext} variant="secondary" style={{ padding: '5px 15px', minHeight: 'auto', fontSize: '0.8rem' }}>{t('skip_card')} ⏭</Button>
             </div>
 
             {gameState === 'setup' && (
@@ -135,10 +124,9 @@ const FakeArtistGame = () => {
                     <p style={{ textAlign: 'center', opacity: 0.8, maxWidth: '300px' }}>
                         {t('fake_intro')}
                     </p>
-                    {players.length < 3 ? <p style={{ color: 'red' }}>Need 3+ Players</p> :
+                    {players.length < 3 ? <p style={{ color: '#ff5555' }}>{t('need_3_players')}</p> :
                         <Button onClick={startGame} className="btn-liquid" style={{ marginTop: '20px' }}>{t('start_game')}</Button>
                     }
-                    <Button onClick={goHome} variant="secondary" style={{ marginTop: '20px' }}>{t('exit_game_button')}</Button>
                 </div>
             )}
 
@@ -172,9 +160,7 @@ const FakeArtistGame = () => {
                 </div>
             )}
 
-            {/* Canvas Area - Always rendered but hidden/shown to persist? No, if we hide via conditional rendering it destroys canvas.
-                We must use display: none for persistence.
-            */}
+            {/* Canvas is always rendered and toggled via display so the drawing persists. */}
             <div style={{
                 display: (gameState === 'draw' || gameState === 'discuss') ? 'flex' : 'none',
                 flexDirection: 'column', alignItems: 'center', flex: 1, width: '100%'
@@ -202,7 +188,7 @@ const FakeArtistGame = () => {
                     <div style={{ marginTop: '10px', textAlign: 'center' }}>
                         <p>The Word was: <b>{secretWord}</b></p>
                         <p>The Fake was: <b style={{ color: '#ff0055' }}>{players[fakeIndex].name}</b></p>
-                        <Button onClick={startGame} variant="primary">New Round</Button>
+                        <Button onClick={onNext} variant="primary">{t('next_card')} ➡️</Button>
                     </div>
                 )}
             </div>

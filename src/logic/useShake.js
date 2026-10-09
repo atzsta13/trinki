@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 export const useShake = (threshold = 15, onShake) => {
-    useEffect(() => {
+    // Keep the latest callback in a ref so the listener isn't re-attached on every render.
+    const onShakeRef = useRef(onShake);
+    onShakeRef.current = onShake;
 
-        if (typeof window === 'undefined' || !window.DeviceMotionEvent) {
-            return;
-        }
+    useEffect(() => {
+        if (typeof window === 'undefined' || !window.DeviceMotionEvent) return;
 
         let lastX = 0;
         let lastY = 0;
@@ -14,38 +15,22 @@ export const useShake = (threshold = 15, onShake) => {
 
         const handleMotion = (e) => {
             const current = e.accelerationIncludingGravity;
-
             if (!current || current.x === null) return;
 
-            const currentTime = Date.now();
-            if ((currentTime - lastTime) > 100) {
-                const diffTime = currentTime - lastTime;
-                lastTime = currentTime;
+            const now = Date.now();
+            const diffTime = now - lastTime;
+            if (diffTime <= 100) return;
+            lastTime = now;
 
-                const speed = Math.abs(current.x + current.y + current.z - lastX - lastY - lastZ) / diffTime * 10000;
+            const speed = Math.abs(current.x + current.y + current.z - lastX - lastY - lastZ) / diffTime * 10000;
+            if (speed > threshold) onShakeRef.current();
 
-                if (speed > threshold) {
-                    onShake();
-                }
-
-                lastX = current.x;
-                lastY = current.y;
-                lastZ = current.z;
-            }
+            lastX = current.x;
+            lastY = current.y;
+            lastZ = current.z;
         };
 
-        try {
-            window.addEventListener('devicemotion', handleMotion);
-        } catch (e) {
-            console.warn("Device motion not supported:", e);
-        }
-
-        return () => {
-            try {
-                window.removeEventListener('devicemotion', handleMotion);
-            } catch (e) {
-
-            }
-        };
-    }, [threshold, onShake]);
+        window.addEventListener('devicemotion', handleMotion);
+        return () => window.removeEventListener('devicemotion', handleMotion);
+    }, [threshold]);
 };

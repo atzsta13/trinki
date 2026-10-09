@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useGame } from '../../logic/GameContext';
-import Button from '../Shared/Button';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
+import { useGame } from '../../logic/GameContext';
+import Button from '../Shared/Button';
 import { triggerHaptic, HapticType } from '../../logic/haptics';
 
 const SPY_WORDS = [
@@ -17,8 +17,8 @@ const SPY_WORDS = [
     { category: "Holidays", words: ["Christmas", "Halloween", "Easter", "Thanksgiving", "New Year", "Valentine's Day", "Hanukkah", "Ramadan", "Diwali", "Kwanzaa", "St. Patrick's Day", "April Fools", "Mother's Day", "Father's Day", "Independence Day"] },
 ];
 
-const SpyGame = () => {
-    const { players, goHome } = useGame();
+const SpyGame = ({ onNext }) => {
+    const { players } = useGame();
     const { t } = useTranslation();
     const [gameState, setGameState] = useState('setup');
     const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
@@ -53,12 +53,10 @@ const SpyGame = () => {
     };
 
     useEffect(() => {
-        let interval;
-        if (gameState === 'discuss' && timer > 0) {
-            interval = setInterval(() => setTimer(t => t - 1), 1000);
-        }
+        if (gameState !== 'discuss') return;
+        const interval = setInterval(() => setTimer(t => Math.max(t - 1, 0)), 1000);
         return () => clearInterval(interval);
-    }, [gameState, timer]);
+    }, [gameState]);
 
     const formatTime = (s) => {
         const m = Math.floor(s / 60);
@@ -66,33 +64,31 @@ const SpyGame = () => {
         return `${m}:${sec < 10 ? '0' : ''}${sec}`;
     };
 
-    const startVoteCountdown = () => {
-        setVoteCountdown(3);
-        const interval = setInterval(() => {
-            setVoteCountdown(v => {
-                if (v <= 1) {
-                    clearInterval(interval);
-                    setGameState('vote');
-                    triggerHaptic(HapticType.SUCCESS);
-                    return 0;
-                }
+    useEffect(() => {
+        if (voteCountdown <= 0) return;
+        const timeout = setTimeout(() => {
+            if (voteCountdown === 1) {
+                setGameState('vote');
+                triggerHaptic(HapticType.SUCCESS);
+            } else {
                 triggerHaptic(HapticType.WARNING);
-                return v - 1;
-            });
+            }
+            setVoteCountdown(v => v - 1);
         }, 1000);
-    };
+        return () => clearTimeout(timeout);
+    }, [voteCountdown]);
 
     return (
         <div className="full-screen" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
             <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10 }}>
-                <Button onClick={goHome} variant="secondary" style={{ padding: '5px 10px', minWidth: 'auto', background: 'rgba(0,0,0,0.5)' }}>✕</Button>
+                <Button onClick={onNext} variant="secondary" style={{ padding: '5px 15px', minHeight: 'auto', fontSize: '0.8rem', background: 'rgba(0,0,0,0.5)' }}>{t('skip_card')} ⏭</Button>
             </div>
 
             {gameState === 'setup' && (
                 <>
                     <h1 style={{ color: '#fff' }}>🕵️ {t('mode_spy')}</h1>
                     <p style={{ opacity: 0.7, marginBottom: '20px' }}>{t('spy_find_liar')}</p>
-                    {players.length < 3 ? <p style={{ color: 'red' }}>Need 3+ Players!</p> :
+                    {players.length < 3 ? <p style={{ color: '#ff5555' }}>{t('need_3_players')}</p> :
                         <Button onClick={startGame} className="btn-liquid">{t('start_game')}</Button>
                     }
                 </>
@@ -160,7 +156,7 @@ const SpyGame = () => {
                     {voteCountdown > 0 ? (
                         <div style={{ fontSize: '4rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>{voteCountdown}</div>
                     ) : (
-                        <Button onClick={startVoteCountdown} variant="primary" style={{ marginTop: '20px' }}>{t('start_countdown')}</Button>
+                        <Button onClick={() => setVoteCountdown(3)} variant="primary" style={{ marginTop: '20px' }}>{t('start_countdown')}</Button>
                     )}
                 </div>
             )}
@@ -210,13 +206,9 @@ const SpyGame = () => {
                         <h3 style={{ color: 'var(--color-primary)' }}>{secretWord}</h3>
                     </div>
 
-                    <Button onClick={() => setGameState('setup')} variant="primary" style={{ marginTop: '30px' }}>New Round</Button>
+                    <Button onClick={onNext} variant="primary" style={{ marginTop: '30px' }}>{t('next_card')} ➡️</Button>
                 </div>
             )}
-
-            <div style={{ position: 'absolute', bottom: 40 }}>
-                <Button onClick={goHome} variant="secondary">Exit</Button>
-            </div>
         </div>
     );
 };

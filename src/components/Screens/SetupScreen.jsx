@@ -1,13 +1,34 @@
 import React, { useState } from 'react';
-import { useGame } from '../../logic/GameContext';
 import { Reorder } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
+import { useGame } from '../../logic/GameContext';
 import Button from '../Shared/Button';
 import CustomCardInput from '../Shared/CustomCardInput';
 import SettingsModal from '../Shared/SettingsModal';
 import nameList from '../../logic/names.json';
-import { useTranslation } from 'react-i18next';
-import { PARTY_MODES, SOCIAL_MODES, SEASONAL_MODES, MODES, TOOLS } from '../../logic/modes';
+import { PARTY_MODES, SOCIAL_MODES, SEASONAL_MODES, DEFAULT_MODES } from '../../logic/modes';
 import { triggerHaptic, HapticType } from '../../logic/haptics';
+
+const SPICY_EMOJIS = ['👶', '🧊', '🫣', '🍻', '🔥', '🥵', '☠️'];
+const SKIPPED_NAMES_KEY = 'trinki_skipped_names';
+
+const groupHeadingStyle = {
+    margin: '0 0 10px 0',
+    opacity: 0.6,
+    fontSize: '0.8rem',
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+    textAlign: 'center'
+};
+
+const loadSkippedNames = () => {
+    try {
+        return JSON.parse(localStorage.getItem(SKIPPED_NAMES_KEY) || '[]');
+    } catch {
+        return [];
+    }
+};
 
 const SetupSection = ({ title, children }) => (
     <div className="setup-card">
@@ -18,49 +39,75 @@ const SetupSection = ({ title, children }) => (
     </div>
 );
 
+const ModeGroup = ({ title, description, modes, selectedModes, onToggle, getLabel }) => (
+    <div style={{ marginBottom: '20px' }}>
+        <h4 style={groupHeadingStyle}>{title}</h4>
+        {description && (
+            <p style={{ textAlign: 'center', fontSize: '0.75rem', opacity: 0.5, margin: '-5px 0 10px 0' }}>{description}</p>
+        )}
+        <div className="mode-card-grid" style={{ padding: '0 10px' }}>
+            {modes.map(mode => {
+                const isActive = selectedModes.includes(mode.id);
+                return (
+                    <div
+                        key={mode.id}
+                        onClick={() => onToggle(mode.id)}
+                        className={`mode-card ${isActive ? 'active' : ''}`}
+                        style={{ width: '100%', height: 'auto', aspectRatio: '1/1', position: 'relative' }}
+                    >
+                        <span style={{ fontSize: '2rem', marginBottom: '8px' }}>{mode.emoji}</span>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 'bold', lineHeight: '1.2' }}>{getLabel(mode)}</span>
+                        {isActive && (
+                            <div style={{
+                                position: 'absolute', top: '8px', right: '8px',
+                                width: '20px', height: '20px', background: '#fff',
+                                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}>
+                                <span style={{ color: 'var(--color-primary)', fontSize: '12px', fontWeight: 'bold' }}>✓</span>
+                            </div>
+                        )}
+                    </div>
+                );
+            })}
+        </div>
+    </div>
+);
+
 const SetupScreen = () => {
-    const { players, setPlayers, addPlayer, removePlayer, startGame, launchGame, settings, setSpicyLevel, setDrinkType, setGroupType, gameMode, openTool } = useGame();
+    const { players, setPlayers, addPlayer, removePlayer, launchGame, settings, setSpicyLevel, gameMode, openChooser } = useGame();
     const { t } = useTranslation();
     const [name, setName] = useState('');
     const [showSettings, setShowSettings] = useState(false);
+    // Coming back from a game keeps the previous selection.
+    const [selectedModes, setSelectedModes] = useState(() => (Array.isArray(gameMode) ? gameMode : DEFAULT_MODES));
 
-    const [selectedModes, setSelectedModes] = useState(() => {
-        if (!gameMode || gameMode === 'classic') {
-            return [
-                'classic', 'mostLikely', 'neverHaveIEver', 'wouldYouRather', 'taboo', 'paranoia',
-                'tenOuttaTen', 'hypotheticals', 'truthOrDare', 'marryKissKill',
-                'mindMatch', 'wrongAnswers', 'betBuddy', 'fakeOrFact',
-                'bomb', 'charades', 'fakeArtist', 'spy'
-            ];
-        }
-        return ['classic', gameMode];
-    });
+    const toggleMode = (id) => {
+        triggerHaptic(HapticType.SELECTION);
+        setSelectedModes(prev => (prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]));
+    };
 
-    const getRandomName = (e) => {
-        e.preventDefault();
-        const skipped = JSON.parse(localStorage.getItem('trinki_skipped_names') || '[]');
+    const getModeLabel = (mode) => (i18n.exists(mode.label) ? t(mode.label) : (mode.labelFallback || mode.label));
 
+    // Suggests a random name; a suggestion that gets rerolled won't be suggested again.
+    const getRandomName = () => {
+        const skipped = loadSkippedNames();
         if (name && nameList.includes(name) && !skipped.includes(name)) {
             skipped.push(name);
-            localStorage.setItem('trinki_skipped_names', JSON.stringify(skipped));
+            localStorage.setItem(SKIPPED_NAMES_KEY, JSON.stringify(skipped));
         }
 
-        const available = nameList.filter(n => !skipped.includes(n) && !players.some(p => p.name === n));
+        const unused = nameList.filter(n => !players.some(p => p.name === n));
+        let available = unused.filter(n => !skipped.includes(n));
 
         if (available.length === 0) {
-            if (window.confirm("No more random names! Reset the list?")) {
-                localStorage.removeItem('trinki_skipped_names');
-                const allAvailable = nameList.filter(n => !players.some(p => p.name === n));
-                if (allAvailable.length > 0) {
-                    const random = allAvailable[Math.floor(Math.random() * allAvailable.length)];
-                    setName(random);
-                }
-            }
-            return;
+            if (!window.confirm(t('random_name_reset'))) return;
+            localStorage.removeItem(SKIPPED_NAMES_KEY);
+            available = unused;
         }
 
-        const random = available[Math.floor(Math.random() * available.length)];
-        setName(random);
+        if (available.length > 0) {
+            setName(available[Math.floor(Math.random() * available.length)]);
+        }
     };
 
     const handleAdd = (e) => {
@@ -72,7 +119,7 @@ const SetupScreen = () => {
     };
 
     return (
-        <div className="flex-col-start full-screen party-setup-container" style={{ alignItems: 'center', position: 'relative' }}>
+        <div className="full-screen party-setup-container" style={{ alignItems: 'center', position: 'relative' }}>
             <button
                 onClick={() => setShowSettings(true)}
                 style={{
@@ -148,7 +195,7 @@ const SetupScreen = () => {
                                 minWidth: 0
                             }}
                         />
-                        <Button onClick={handleAdd} variant="secondary" style={{ padding: '12px', minWidth: '50px', border: '2px solid var(--color-primary)', color: 'var(--color-primary)', flexShrink: 0 }}>🎲</Button>
+                        <Button onClick={getRandomName} variant="secondary" style={{ padding: '12px', minWidth: '50px', border: '2px solid var(--color-primary)', color: 'var(--color-primary)', flexShrink: 0 }}>🎲</Button>
                         <Button type="submit" variant="primary" style={{ padding: '12px', minWidth: '50px', flexShrink: 0 }}>+</Button>
                     </form>
 
@@ -160,7 +207,7 @@ const SetupScreen = () => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', alignItems: 'center' }}>
                             <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>{t('spiciness_level')}</span>
                             <span style={{ fontSize: '1.8rem' }}>
-                                {['👶', '🧊', '🫣', '🍻', '🔥', '🥵', '☠️'][settings.spicyLevel]}
+                                {SPICY_EMOJIS[settings.spicyLevel]}
                             </span>
                         </div>
 
@@ -172,7 +219,7 @@ const SetupScreen = () => {
                                 step="1"
                                 value={settings.spicyLevel}
                                 onChange={(e) => {
-                                    setSpicyLevel(parseInt(e.target.value));
+                                    setSpicyLevel(parseInt(e.target.value, 10));
                                     triggerHaptic(HapticType.SELECTION);
                                 }}
                                 style={{
@@ -186,7 +233,7 @@ const SetupScreen = () => {
                                 }}
                             />
                             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 8px', marginTop: '15px' }}>
-                                {['👶', '🧊', '🫣', '🍻', '🔥', '🥵', '☠️'].map((emoji, i) => (
+                                {SPICY_EMOJIS.map((emoji, i) => (
                                     <span
                                         key={i}
                                         onClick={() => {
@@ -217,138 +264,24 @@ const SetupScreen = () => {
 
                 <SetupSection title={t('content_pack')}>
 
+                    <ModeGroup title={t('cat_party')} modes={PARTY_MODES} selectedModes={selectedModes} onToggle={toggleMode} getLabel={getModeLabel} />
+
                     <div style={{ marginBottom: '20px' }}>
-                        <h4 style={{
-                            margin: '0 0 10px 0',
-                            opacity: 0.6,
-                            fontSize: '0.8rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '1px',
-                            textAlign: 'center'
-                        }}>
-                            {t('cat_party')}
-                        </h4>
+                        <h4 style={groupHeadingStyle}>{t('party_tools')}</h4>
                         <div className="mode-card-grid" style={{ padding: '0 10px' }}>
-                            {PARTY_MODES.map(mode => {
-                                const isActive = selectedModes.includes(mode.id);
-                                return (
-                                    <div
-                                        key={mode.id}
-                                        onClick={() => {
-                                            triggerHaptic(HapticType.SELECTION);
-                                            if (isActive) {
-                                                setSelectedModes(selectedModes.filter(m => m !== mode.id));
-                                            } else {
-                                                setSelectedModes([...selectedModes, mode.id]);
-                                            }
-                                        }}
-                                        className={`mode-card ${isActive ? 'active' : ''}`}
-                                        style={{ width: '100%', height: 'auto', aspectRatio: '1/1' }}
-                                    >
-                                        <span style={{ fontSize: '2rem', marginBottom: '8px' }}>{mode.emoji}</span>
-                                        <span style={{ fontSize: '0.9rem', fontWeight: 'bold', lineHeight: '1.2' }}>
-                                            {t(mode.label) !== mode.label ? t(mode.label) : (mode.labelFallback || mode.label.split(' ').slice(1).join(' ') || mode.label)}
-                                        </span>
-                                        {/* Checkmark for active */}
-                                        {isActive && <div style={{
-                                            position: 'absolute', top: '8px', right: '8px',
-                                            width: '20px', height: '20px', background: '#fff',
-                                            borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                        }}>
-                                            <span style={{ color: 'var(--color-primary)', fontSize: '12px', fontWeight: 'bold' }}>✓</span>
-                                        </div>}
-                                    </div>
-                                );
-                            })}
+                            <div
+                                onClick={openChooser}
+                                className="mode-card"
+                                style={{ width: '100%', height: 'auto', aspectRatio: '2/1', flexDirection: 'row', gap: '15px' }}
+                            >
+                                <span style={{ fontSize: '2rem' }}>👆</span>
+                                <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>Finger Chooser</span>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Tools Section */}
-                    {TOOLS && TOOLS.length > 0 && (
-                        <div style={{ marginBottom: '20px' }}>
-                            <h4 style={{
-                                margin: '0 0 10px 0',
-                                opacity: 0.6,
-                                fontSize: '0.8rem',
-                                textTransform: 'uppercase',
-                                letterSpacing: '1px',
-                                textAlign: 'center'
-                            }}>
-                                Party Tools
-                            </h4>
-                            <div className="mode-card-grid" style={{ padding: '0 10px' }}>
-                                {TOOLS.map(tool => (
-                                    <div
-                                        key={tool.id}
-                                        onClick={() => openTool(tool.id)}
-                                        className="mode-card"
-                                        style={{ width: '100%', height: 'auto', aspectRatio: '2/1', flexDirection: 'row', gap: '15px' }}
-                                    >
-                                        <span style={{ fontSize: '2rem' }}>{tool.emoji}</span>
-                                        <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>
-                                            {tool.title || tool.label}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {[
-                        { title: t('cat_social'), items: SOCIAL_MODES },
-                        { title: t('cat_seasonal'), items: SEASONAL_MODES }
-                    ].map((group) => (
-                        <div key={group.title} style={{ marginBottom: '20px' }}>
-                            <h4 style={{
-                                margin: '0 0 10px 0',
-                                opacity: 0.6,
-                                fontSize: '0.8rem',
-                                textTransform: 'uppercase',
-                                letterSpacing: '1px',
-                                textAlign: 'center'
-                            }}>
-
-                                {group.title}
-                            </h4>
-                            <p style={{ textAlign: 'center', fontSize: '0.75rem', opacity: 0.5, margin: '-5px 0 10px 0' }}>
-                                {group.title === t('cat_party') ? 'Select card interaction types (mechanics).' :
-                                    group.title === t('cat_social') ? 'Adds themed content (filtered by spiciness).' :
-                                        'Adds holiday-themed cards.'}
-                            </p>
-                            <div className="mode-card-grid" style={{ padding: '0 10px' }}>
-                                {group.items.map(mode => {
-                                    const isActive = selectedModes.includes(mode.id);
-                                    return (
-                                        <div
-                                            key={mode.id}
-                                            onClick={() => {
-                                                triggerHaptic(HapticType.LIGHT);
-                                                if (isActive) {
-                                                    setSelectedModes(selectedModes.filter(m => m !== mode.id));
-                                                } else {
-                                                    setSelectedModes([...selectedModes, mode.id]);
-                                                }
-                                            }}
-                                            className={`mode-card ${isActive ? 'active' : ''}`}
-                                            style={{ width: '100%', height: 'auto', aspectRatio: '1/1' }}
-                                        >
-                                            <span style={{ fontSize: '2rem', marginBottom: '8px' }}>{mode.emoji}</span>
-                                            <span style={{ fontSize: '0.9rem', fontWeight: 'bold', lineHeight: '1.2' }}>
-                                                {t(mode.label) !== mode.label ? t(mode.label) : (mode.labelFallback || mode.label)}
-                                            </span>
-                                            {isActive && <div style={{
-                                                position: 'absolute', top: '8px', right: '8px',
-                                                width: '20px', height: '20px', background: '#fff',
-                                                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                            }}>
-                                                <span style={{ color: 'var(--color-primary)', fontSize: '12px', fontWeight: 'bold' }}>✓</span>
-                                            </div>}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    ))}
+                    <ModeGroup title={t('cat_social')} description={t('desc_social')} modes={SOCIAL_MODES} selectedModes={selectedModes} onToggle={toggleMode} getLabel={getModeLabel} />
+                    <ModeGroup title={t('cat_seasonal')} description={t('desc_seasonal')} modes={SEASONAL_MODES} selectedModes={selectedModes} onToggle={toggleMode} getLabel={getModeLabel} />
 
                     <div style={{ marginTop: '15px' }}>
                         <CustomCardInput />
@@ -370,7 +303,7 @@ const SetupScreen = () => {
                         height: '65px'
                     }}
                 >
-                    {t('lets_play')} • {selectedModes && selectedModes.length} {selectedModes.length === 1 ? t('mode') : t('modes')}
+                    {t('lets_play')} • {selectedModes.length} {selectedModes.length === 1 ? t('mode') : t('modes')}
                 </Button>
             </div>
 

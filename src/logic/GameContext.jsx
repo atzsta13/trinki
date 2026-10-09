@@ -4,226 +4,149 @@ import { setSoundEnabled } from './sound';
 import { setHapticsEnabled } from './haptics';
 import i18n from '../i18n';
 
+const STORAGE_KEYS = {
+  players: 'trinki_players',
+  settings: 'trinki_settings',
+  playedCards: 'trinki_played_cards',
+  customCards: 'trinki_custom_cards'
+};
+
+// Only remember the most recent cards so localStorage doesn't grow forever.
+const PLAYED_HISTORY_LIMIT = 500;
+
+const DEFAULT_PLAYERS = [
+  { id: '1', name: 'Alex', drinkCount: 0, streak: 0 },
+  { id: '2', name: 'Sam', drinkCount: 0, streak: 0 }
+];
+
+const loadJSON = (key, fallback) => {
+  try {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const saveJSON = (key, value) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Storage full or unavailable (private mode) – the game still works without persistence.
+  }
+};
+
 const GameContext = createContext();
 
 export const useGame = () => useContext(GameContext);
 
 export const GameProvider = ({ children }) => {
-  const [players, setPlayers] = useState(() => {
-    const saved = localStorage.getItem('trinki_players');
-    return saved ? JSON.parse(saved) : [
-      { id: 1, name: 'Alex', drinkCount: 0 },
-      { id: 2, name: 'Sam', drinkCount: 0 }
-    ];
-  });
-  const [gameMode, setGameMode] = useState('classic');
+  const [players, setPlayers] = useState(() => loadJSON(STORAGE_KEYS.players, DEFAULT_PLAYERS));
+  const [settings, setSettings] = useState(() => ({
+    spicyLevel: 3,
+    soundEnabled: true,
+    hapticsEnabled: true,
+    language: i18n.language || 'en',
+    ...loadJSON(STORAGE_KEYS.settings, {})
+  }));
+  const [playedCards, setPlayedCards] = useState(() => loadJSON(STORAGE_KEYS.playedCards, []));
+  const [customCards, setCustomCards] = useState(() => loadJSON(STORAGE_KEYS.customCards, []));
+
+  const [gameMode, setGameMode] = useState(null);
+  const [gameState, setGameState] = useState('setup');
   const [deck, setDeck] = useState([]);
   const [currentCard, setCurrentCard] = useState(null);
-  const [gameState, setGameState] = useState('setup');
-  const [settings, setSettings] = useState(() => {
-    const saved = localStorage.getItem('trinki_settings');
-    const defaults = {
-      spicyLevel: 3,
-      drinkType: 'sips',
-      groupType: 'mixed',
-      soundEnabled: true,
-      hapticsEnabled: true,
-      language: i18n.language || 'en',
-      theme: 'neon'
-    };
+  const [activeViruses, setActiveViruses] = useState([]);
 
+  useEffect(() => saveJSON(STORAGE_KEYS.players, players), [players]);
+  useEffect(() => saveJSON(STORAGE_KEYS.playedCards, playedCards), [playedCards]);
+  useEffect(() => saveJSON(STORAGE_KEYS.customCards, customCards), [customCards]);
+  useEffect(() => saveJSON(STORAGE_KEYS.settings, settings), [settings]);
 
+  // Keep the module-level sound/haptics switches in sync with persisted settings.
+  useEffect(() => setSoundEnabled(settings.soundEnabled), [settings.soundEnabled]);
+  useEffect(() => setHapticsEnabled(settings.hapticsEnabled), [settings.hapticsEnabled]);
 
-    if (saved) {
-      return { ...defaults, ...JSON.parse(saved) };
-    }
-    return defaults;
-  });
-
-
-  useEffect(() => {
-    localStorage.setItem('trinki_players', JSON.stringify(players));
-  }, [players]);
-
-  useEffect(() => {
-    localStorage.setItem('trinki_settings', JSON.stringify(settings));
-    // Sync Theme Color for PWA
-    const metaThemeColor = document.querySelector("meta[name=theme-color]");
-    if (metaThemeColor) {
-      const color = '#000000'; // Neon default black
-      metaThemeColor.setAttribute("content", color);
-    }
-
-    // Apply theme class to body
-    document.body.className = `theme-${settings.theme}`;
-  }, [settings]);
-
-  const [playedCards, setPlayedCards] = useState(() => {
-    const saved = localStorage.getItem('trinki_played_cards');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [customCards, setCustomCards] = useState(() => {
-    const saved = localStorage.getItem('trinki_custom_cards');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const addCustomCard = (text) => {
-    const newCard = { id: Date.now(), text, type: 'custom' };
-    const updated = [...customCards, newCard];
-    setCustomCards(updated);
-    localStorage.setItem('trinki_custom_cards', JSON.stringify(updated));
-  };
-
-  const removeCustomCard = (id) => {
-    const updated = customCards.filter(c => c.id !== id);
-    setCustomCards(updated);
-    localStorage.setItem('trinki_custom_cards', JSON.stringify(updated));
-  };
-
+  // --- Players ---
   const addPlayer = (name) => {
-    const newPlayer = {
-      id: Date.now().toString(),
-      name,
-      drinkCount: 0,
-      streak: 0
-    };
-    setPlayers([...players, newPlayer]);
+    setPlayers(prev => [...prev, { id: Date.now().toString(), name, drinkCount: 0, streak: 0 }]);
   };
 
   const removePlayer = (id) => {
-    setPlayers(players.filter(p => p.id !== id));
+    setPlayers(prev => prev.filter(p => p.id !== id));
   };
 
   const updatePlayerDrinkCount = (id, amount) => {
-    setPlayers(players.map(p => {
-      if (p.id === id) {
-        return { ...p, drinkCount: p.drinkCount + amount, streak: 0 };
-      }
-      return p;
-    }));
+    setPlayers(prev => prev.map(p =>
+      p.id === id ? { ...p, drinkCount: (p.drinkCount || 0) + amount, streak: 0 } : p
+    ));
   };
 
-  const updatePlayerStreak = (id, increment) => {
-    setPlayers(players.map(p => {
-      if (p.id === id) {
-        return { ...p, streak: increment ? (p.streak || 0) + 1 : 0 };
-      }
-      return p;
-    }));
+  const updatePlayerStreak = (id, success) => {
+    setPlayers(prev => prev.map(p =>
+      p.id === id ? { ...p, streak: success ? (p.streak || 0) + 1 : 0 } : p
+    ));
   };
 
-  const setDrinkType = (type) => {
-    setSettings(prev => ({ ...prev, drinkType: type }));
+  // --- Custom cards ---
+  const addCustomCard = (text) => {
+    setCustomCards(prev => [...prev, { id: `custom_${Date.now()}`, text, type: 'custom' }]);
   };
 
-  const toggleSound = () => {
-    setSettings(prev => {
-      const newState = !prev.soundEnabled;
-      setSoundEnabled(newState);
-      return { ...prev, soundEnabled: newState };
-    });
+  const removeCustomCard = (id) => {
+    setCustomCards(prev => prev.filter(c => c.id !== id));
   };
 
-  const toggleHaptics = () => {
-    setSettings(prev => {
-      const newState = !prev.hapticsEnabled;
-      setHapticsEnabled(newState);
-      return { ...prev, hapticsEnabled: newState };
-    });
+  // --- Settings ---
+  const setSpicyLevel = (level) => setSettings(prev => ({ ...prev, spicyLevel: level }));
+  const toggleSound = () => setSettings(prev => ({ ...prev, soundEnabled: !prev.soundEnabled }));
+  const toggleHaptics = () => setSettings(prev => ({ ...prev, hapticsEnabled: !prev.hapticsEnabled }));
+
+  const setLanguage = (lang) => {
+    i18n.changeLanguage(lang);
+    setSettings(prev => ({ ...prev, language: lang }));
   };
 
-  const setTheme = (theme) => {
-    setSettings(prev => ({ ...prev, theme: 'neon' }));
+  // --- Game flow ---
+  const showCard = (card) => {
+    setCurrentCard(card);
+    if (card.type === 'virus') {
+      setActiveViruses(prev => [...prev, card]);
+    }
+    setPlayedCards(prev => [...prev, card.id].slice(-PLAYED_HISTORY_LIMIT));
   };
-
-
-  const startGame = (mode) => {
-    // If invalid params, just go to home or ignore
-    if (!mode) return;
-
-    setGameMode(mode);
-    setGameState('setup');
-  };
-
 
   const launchGame = (modes) => {
-    if (players.length < 2) {
-      alert("Need at least 2 players!");
-      return;
-    }
+    if (players.length < 2) return;
 
+    const newDeck = getDeck(modes, players, customCards, settings, playedCards);
+    if (newDeck.length === 0) return;
+
+    const [first, ...rest] = newDeck;
+    setPlayers(prev => prev.map(p => ({ ...p, drinkCount: 0, streak: 0 })));
     setGameMode(modes);
-
-    const initialDeck = getDeck(modes, players, customCards, settings, playedCards);
-    setDeck(initialDeck);
-
-    if (initialDeck.length > 0) {
-      setCurrentCard(initialDeck[0]);
-    }
-
+    setActiveViruses([]);
+    setDeck(rest);
+    showCard(first);
     setGameState('playing');
   };
 
-  const setSpicyLevel = (level) => {
-    setSettings(prev => ({ ...prev, spicyLevel: level }));
-  };
-
-  const [activeViruses, setActiveViruses] = useState([]);
-
-  const removeVirus = (id) => {
-    setActiveViruses(prev => prev.filter(v => v.id !== id));
-  };
-
-  const finishGame = () => {
-    setGameState('finished');
-  };
-
   const nextCard = () => {
-    setDeck(prevDeck => {
-      let nextBatch = prevDeck || [];
-
-      if (nextBatch.length === 0) {
-        if (!gameMode) return [];
-        const refilled = getDeck(gameMode, players, customCards, settings, playedCards);
-
-        if (refilled.length === 0) {
-          setGameState('finished');
-          return [];
-        }
-        nextBatch = refilled;
+    let remaining = deck;
+    if (remaining.length === 0) {
+      remaining = gameMode ? getDeck(gameMode, players, customCards, settings, playedCards) : [];
+      if (remaining.length === 0) {
+        setGameState('finished');
+        return;
       }
+    }
 
-      const [next, ...rest] = nextBatch;
-
-      setCurrentCard(next);
-
-      if (next && next.type === 'virus') {
-        setActiveViruses(prev => [...prev, next]);
-      }
-
-      if (next) {
-        setPlayedCards(prevPlayed => {
-          const newPlayed = [...prevPlayed, next.text];
-          localStorage.setItem('trinki_played_cards', JSON.stringify(newPlayed));
-          return newPlayed;
-        });
-      }
-
-      return rest;
-    });
+    const [next, ...rest] = remaining;
+    setDeck(rest);
+    showCard(next);
   };
 
-  const resetHistory = () => {
-    setPlayedCards([]);
-    localStorage.removeItem('trinki_played_cards');
-  };
-
-  const resetGame = () => {
-    setGameState('setup');
-    setDeck([]);
-    setCurrentCard(null);
-    setActiveViruses([]);
-  };
+  const finishGame = () => setGameState('finished');
 
   const goHome = () => {
     setGameState('setup');
@@ -231,23 +154,14 @@ export const GameProvider = ({ children }) => {
     setCurrentCard(null);
     setActiveViruses([]);
   };
-  const openTool = (toolId) => {
-    if (toolId === 'chooser') {
-      setGameState('chooser');
-    }
-  };
-  const setGroupType = (type) => {
-    setSettings(prev => ({ ...prev, groupType: type }));
+
+  const removeVirus = (instanceId) => {
+    setActiveViruses(prev => prev.filter(v => v.instanceId !== instanceId));
   };
 
-  const setLanguage = (lang) => {
-    i18n.changeLanguage(lang);
-    setSettings(prev => ({ ...prev, language: lang }));
-  };
+  const resetHistory = () => setPlayedCards([]);
 
-  const openChooser = () => {
-    setGameState('chooser');
-  };
+  const openChooser = () => setGameState('chooser');
 
   return (
     <GameContext.Provider value={{
@@ -262,28 +176,20 @@ export const GameProvider = ({ children }) => {
       removeCustomCard,
       settings,
       setSpicyLevel,
-      setDrinkType,
-      setGroupType,
       toggleSound,
       toggleHaptics,
-      setTheme,
       setLanguage,
       gameMode,
       gameState,
       currentCard,
-      startGame,
       launchGame,
       nextCard,
       finishGame,
-      resetGame,
       goHome,
-      openTool,
+      openChooser,
       resetHistory,
-      deck,
-      playedCards,
       activeViruses,
-      removeVirus,
-      openChooser
+      removeVirus
     }}>
       {children}
     </GameContext.Provider>

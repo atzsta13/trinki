@@ -1,24 +1,48 @@
 import React, { useState } from 'react';
-import { GameProvider, useGame } from './logic/GameContext';
 import { AnimatePresence, motion } from 'framer-motion';
+import { GameProvider, useGame } from './logic/GameContext';
 import SetupScreen from './components/Screens/SetupScreen';
 import GameScreen from './components/Screens/GameScreen';
 import FingerChooser from './components/Screens/FingerChooser';
-
 import Disclaimer from './components/Screens/Disclaimer';
 
+const DISCLAIMER_KEY = 'trinki_disclaimer_accepted';
+
+const pageVariants = {
+  initial: { opacity: 0, x: 20 },
+  in: { opacity: 1, x: 0 },
+  out: { opacity: 0, x: -20 }
+};
+
+const pageTransition = {
+  type: 'tween',
+  ease: 'anticipate',
+  duration: 0.3
+};
+
+const SCREENS = {
+  setup: SetupScreen,
+  playing: GameScreen,
+  finished: GameScreen,
+  chooser: FingerChooser
+};
+
 const AppContent = () => {
-  const { gameState, settings } = useGame();
+  const { gameState } = useGame();
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(() => {
-    return localStorage.getItem('trinki_disclaimer_accepted') === 'true';
+    try {
+      return localStorage.getItem(DISCLAIMER_KEY) === 'true';
+    } catch {
+      return false;
+    }
   });
 
-  React.useEffect(() => {
-    document.body.className = `theme-${settings.theme || 'neon'}`;
-  }, [settings.theme]);
-
   const handleAcceptDisclaimer = () => {
-    localStorage.setItem('trinki_disclaimer_accepted', 'true');
+    try {
+      localStorage.setItem(DISCLAIMER_KEY, 'true');
+    } catch {
+      // Not persisted – the disclaimer just shows again next time.
+    }
     setDisclaimerAccepted(true);
   };
 
@@ -26,40 +50,15 @@ const AppContent = () => {
     return <Disclaimer onAccept={handleAcceptDisclaimer} />;
   }
 
-  const pageVariants = {
-    initial: { opacity: 0, x: 20 },
-    in: { opacity: 1, x: 0 },
-    out: { opacity: 0, x: -20 }
-  };
-
-  const pageTransition = {
-    type: "tween",
-    ease: "anticipate",
-    duration: 0.3
-  };
-
-  let content;
-  switch (gameState) {
-    case 'playing':
-    case 'finished':
-      content = <GameScreen key="game" />;
-      break;
-    case 'setup':
-      content = <SetupScreen key="setup" />;
-      break;
-    case 'chooser':
-      content = <FingerChooser key="chooser" />;
-      break;
-    default:
-      content = <SetupScreen key="setup" />;
-      break;
-  }
+  const Screen = SCREENS[gameState] || SetupScreen;
+  // 'playing' and 'finished' share a screen, so they share a transition key too.
+  const screenKey = gameState === 'finished' ? 'playing' : gameState;
 
   return (
     <div style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
       <AnimatePresence mode="wait">
         <motion.div
-          key={gameState}
+          key={screenKey}
           initial="initial"
           animate="in"
           exit="out"
@@ -67,7 +66,7 @@ const AppContent = () => {
           transition={pageTransition}
           style={{ width: '100%', height: '100%', position: 'absolute' }}
         >
-          {content}
+          <Screen />
         </motion.div>
       </AnimatePresence>
     </div>
