@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { gzipSync } from 'node:zlib';
 
-const BUDGET_KB = 180; // gzip, everything index.html loads up front
+const BUDGET_KB = 115; // gzip, everything index.html loads up front
 
 const dist = path.resolve(import.meta.dirname, '../dist');
 const html = fs.readFileSync(path.join(dist, 'index.html'), 'utf8');

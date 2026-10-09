@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'motion/react';
 import { useGame } from '../../logic/GameContext';
 import Button from '../Shared/Button';
 import { playBeep, playSuccess } from '../../logic/sound';
@@ -120,93 +119,42 @@ const FingerChooser = () => {
 
     return (
         <div
+            className="chooser"
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onPointerCancel={handlePointerUp}
             onPointerLeave={handlePointerUp}
-            style={{
-                position: 'fixed',
-                inset: 0,
-                touchAction: 'none', // Critical for preventing scroll/zoom
-                userSelect: 'none',
-                zIndex: 2000,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center'
-            }}
         >
-            {touchCount === 0 && (
-                <div style={{ position: 'absolute', top: 'env(safe-area-inset-top)', left: 20, zIndex: 2001, paddingTop: 20 }}>
-                    <Button onClick={goHome} variant="secondary" style={{ padding: '10px 20px', minHeight: 'auto' }}>
-                        ← Back
-                    </Button>
-                </div>
-            )}
+            {touchCount === 0 && <Button variant="secondary" className="chooser-back" onClick={goHome}>← Back</Button>}
 
             {touchCount < 2 && !winnerId && (
-                <div style={{ pointerEvents: 'none', opacity: 0.6, textAlign: 'center' }}>
+                <div className="center muted passive">
                     <h2>Finger Chooser</h2>
                     <p>Place 2+ fingers on screen to choose a starter</p>
                 </div>
             )}
 
-            {status === 'countdown' && (
-                <div style={{ pointerEvents: 'none', color: '#fff', fontSize: '2rem', fontWeight: 'bold', position: 'absolute' }}>
-                    Hold...
-                </div>
-            )}
+            {status === 'countdown' && <div className="big passive">Hold...</div>}
 
             {Object.entries(touches).map(([id, touch]) => {
-                const isWinner = winnerId !== null && id === winnerId;
-                if (winnerId !== null && !isWinner) return null; // Hide losers
-
+                const isWinner = id === winnerId;
+                if (winnerId && !isWinner) return null; // Hide losers
                 return (
-                    // Outer element follows the finger directly (no spring per pointer move); inner one animates scale.
-                    <div
-                        key={id}
-                        style={{
-                            position: 'absolute',
-                            left: 0,
-                            top: 0,
-                            transform: `translate3d(${touch.x - CIRCLE_SIZE / 2}px, ${touch.y - CIRCLE_SIZE / 2}px, 0)`,
-                            pointerEvents: 'none'
-                        }}
-                    >
-                        <motion.div
-                            initial={{ scale: 0, opacity: 0 }}
-                            animate={{
-                                scale: isWinner ? 50 : (status === 'countdown' ? [1.5, 1.8, 1.5] : 1.5),
-                                opacity: 1
-                            }}
-                            transition={{
-                                duration: 0.5,
-                                repeat: status === 'countdown' && !isWinner ? Infinity : 0
-                            }}
-                            style={{
-                                width: CIRCLE_SIZE,
-                                height: CIRCLE_SIZE,
-                                borderRadius: '50%',
-                                background: touch.color,
-                                boxShadow: `0 0 30px ${touch.color}`
-                            }}
+                    // Outer element follows the finger, inner one animates (pulse while counting, grow for the winner).
+                    <div key={id} className="finger-anchor" style={{ transform: `translate3d(${touch.x - CIRCLE_SIZE / 2}px, ${touch.y - CIRCLE_SIZE / 2}px, 0)` }}>
+                        <div
+                            className={`finger ${status === 'countdown' ? 'counting' : ''} ${isWinner ? 'winner' : ''}`}
+                            style={{ background: touch.color, boxShadow: `0 0 30px ${touch.color}` }}
                         />
                     </div>
                 );
             })}
 
             {winnerId && (
-                <div style={{
-                    position: 'absolute',
-                    top: '20%',
-                    width: '100%',
-                    textAlign: 'center',
-                    pointerEvents: 'none',
-                    animation: 'fadeInScale 0.5s ease'
-                }}>
-                    <h1 style={{ fontSize: '4rem', color: '#fff', textShadow: '0 0 20px rgba(255,255,255,0.5)' }}>CHOSEN!</h1>
-                    <p style={{ marginTop: 20 }}>Tap anywhere to reset</p>
+                <div className="chooser-result passive pop-in">
+                    <h1>CHOSEN!</h1>
+                    <p>Tap anywhere to reset</p>
                 </div>
             )}
         </div>

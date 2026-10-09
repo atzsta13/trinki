@@ -69,56 +69,40 @@ const CharadesGame = ({ onNext }) => {
         return () => clearInterval(interval);
     }, [gameState]);
 
+    if (gameState === 'setup') {
+        return (
+            <div className="screen">
+                <h1>🎭 Charades</h1>
+                <p>Hold the phone to your forehead.</p>
+                <p>Your friends act it out – you guess!</p>
+                <Button onClick={startGame}>Start Game</Button>
+                <Button variant="secondary" onClick={onNext}>Skip</Button>
+            </div>
+        );
+    }
+
+    if (gameState === 'finished') {
+        return (
+            <div className="screen">
+                <h1>Time&apos;s Up!</h1>
+                <div className="huge good">{score}</div>
+                <p>Points</p>
+                <Button onClick={onNext}>Next Card ➡️</Button>
+            </div>
+        );
+    }
+
     return (
-        <div className="full-screen" style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px',
-            background: '#000'
-        }}>
-            {gameState === 'setup' && (
-                <div style={{ textAlign: 'center', padding: '20px' }}>
-                    <h1 style={{ fontSize: '3rem' }}>🎭</h1>
-                    <h1>Charades</h1>
-                    <p>Hold the phone to your forehead.</p>
-                    <p>Your friends act it out – you guess!</p>
-                    <Button onClick={startGame} className="btn-liquid" style={{ marginTop: '20px' }}>Start Game</Button>
-                    <div style={{ marginTop: '40px' }}>
-                        <Button onClick={onNext} variant="secondary">Skip</Button>
-                    </div>
-                </div>
-            )}
-
-            {gameState === 'playing' && (
-                <div style={{
-                    width: '100%', height: '100%',
-                    display: 'flex', flexDirection: 'column',
-                    alignItems: 'center', justifyContent: 'center',
-                }}>
-                    <div style={{ position: 'absolute', top: 20, right: 20, fontSize: '1.5rem', fontWeight: 'bold' }}>
-                        ⏱️ {timeLeft}
-                    </div>
-                    <div style={{ position: 'absolute', top: 20, left: 20, fontSize: '1.5rem', fontWeight: 'bold', color: '#00ff00' }}>
-                        ✅ {score}
-                    </div>
-
-                    <h1 style={{ fontSize: '4rem', textAlign: 'center', lineHeight: 1.1, padding: '20px' }}>
-                        {currentWord}
-                    </h1>
-
-                    <div style={{ marginTop: '50px', display: 'flex', gap: '20px', opacity: 0.8 }}>
-                        <Button onClick={handlePass} style={{ background: '#ff5555', height: '80px', width: '120px' }}>PASS</Button>
-                        <Button onClick={handleCorrect} style={{ background: '#55ff55', height: '80px', width: '120px', color: '#000' }}>CORRECT</Button>
-                    </div>
-                </div>
-            )}
-
-            {gameState === 'finished' && (
-                <div style={{ textAlign: 'center' }}>
-                    <h1>Time's Up!</h1>
-                    <h2 style={{ fontSize: '4rem', color: '#00ff00' }}>{score}</h2>
-                    <p>Points</p>
-                    <Button onClick={onNext} className="btn-liquid" style={{ marginTop: '20px' }}>Next Card ➡️</Button>
-                </div>
-            )}
+        <div className="screen">
+            <div className="row spread full-width big">
+                <strong className="good">✅ {score}</strong>
+                <strong>⏱️ {timeLeft}</strong>
+            </div>
+            <h1 className="grow charades-word">{currentWord}</h1>
+            <div className="row">
+                <Button className="btn-big btn-stop" onClick={handlePass}>PASS</Button>
+                <Button className="btn-big btn-go" onClick={handleCorrect}>CORRECT</Button>
+            </div>
         </div>
     );
 };

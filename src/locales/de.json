@@ -56,7 +56,6 @@
   "n_fakeorfact": "Fake oder Fakt",
   "spy_find_liar": "Finde den Betrüger unter uns.",
   "spy_pass_to": "Weitergeben an:",
-  "spy_hold_to_reveal": "HALTEN ZUM ENTHÜLLEN",
   "spy_you_are_spy": "DU BIST DER SPION 🕵️",
   "spy_discuss": "Diskutiert! Wer verhält sich verdächtig?",
   "spy_who_is_spy": "Wer ist der Spion?",
@@ -66,7 +65,6 @@
   "spy_the_spy_was": "Der Spion war:",
   "spy_the_word_was": "Das Wort war:",
   "fake_intro": "Jeder zeichnet eine Linie. Der Fake-Artist kennt das Wort nicht, muss aber so tun als ob. Schnappt ihn!",
-  "fake_hold_to_see": "HALTEN ZUM SEHEN",
   "fake_you_are_fake": "DU BIST DER FAKE",
   "fake_draw_one": "Zeichne EINE Linie!",
   "fake_tip_no_lift": "Tipp: Finger nicht abheben!",
@@ -89,5 +87,6 @@
   "end_rule": "Beenden",
   "random_name_reset": "Keine Zufallsnamen mehr! Liste zurücksetzen?",
   "desc_social": "Fügt thematische Karten hinzu (nach Schärfe gefiltert).",
-  "desc_seasonal": "Fügt Feiertags-Karten hinzu."
+  "desc_seasonal": "Fügt Feiertags-Karten hinzu.",
+  "tap_to_reveal": "TIPPEN ZUM AUFDECKEN"
 }

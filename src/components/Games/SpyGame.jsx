@@ -1,9 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { motion } from 'motion/react';
 import { useGame } from '../../logic/GameContext';
+import { useT } from '../../i18n';
 import Button from '../Shared/Button';
+import PassAndReveal from './PassAndReveal';
 import { triggerHaptic, HapticType } from '../../logic/haptics';
+
+const DISCUSS_SECONDS = 180;
+
+const pickRandom = (list) => list[Math.floor(Math.random() * list.length)];
+const formatTime = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
 const SPY_WORDS = [
     { category: "Locations", words: ["Beach", "Hospital", "School", "Police Station", "Supermarket", "Cinema", "Airplane", "Gym", "Library", "Zoo", "Casino", "Church", "Bank", "Hotel", "Restaurant", "Museum", "Graveyard", "Space Station", "Submarine", "Cruise Ship", "Farm", "Circus", "Bowling Alley", "Stadium"] },
@@ -17,196 +22,94 @@ const SPY_WORDS = [
     { category: "Holidays", words: ["Christmas", "Halloween", "Easter", "Thanksgiving", "New Year", "Valentine's Day", "Hanukkah", "Ramadan", "Diwali", "Kwanzaa", "St. Patrick's Day", "April Fools", "Mother's Day", "Father's Day", "Independence Day"] },
 ];
 
+// Everyone but the spy sees the secret word; discuss, then vote who the spy is.
 const SpyGame = ({ onNext }) => {
     const { players } = useGame();
-    const { t } = useTranslation();
-    const [gameState, setGameState] = useState('setup');
-    const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
-    const [isRevealing, setIsRevealing] = useState(false);
-    const [spyIndex, setSpyIndex] = useState(null);
-    const [secretWord, setSecretWord] = useState('');
-    const [timer, setTimer] = useState(0);
+    const t = useT();
+    const [stage, setStage] = useState('setup'); // setup → reveal → discuss → vote → result
+    const [playerIndex, setPlayerIndex] = useState(0);
+    const [spyIndex, setSpyIndex] = useState(0);
+    const [word, setWord] = useState('');
+    const [timeLeft, setTimeLeft] = useState(DISCUSS_SECONDS);
     const [votedIndex, setVotedIndex] = useState(null);
-    const [voteCountdown, setVoteCountdown] = useState(0);
 
-    const startGame = () => {
-        const cat = SPY_WORDS[Math.floor(Math.random() * SPY_WORDS.length)];
-        const word = cat.words[Math.floor(Math.random() * cat.words.length)];
-        setSecretWord(word);
+    useEffect(() => {
+        if (stage !== 'discuss') return;
+        const interval = setInterval(() => setTimeLeft(s => Math.max(s - 1, 0)), 1000);
+        return () => clearInterval(interval);
+    }, [stage]);
 
-        const spy = Math.floor(Math.random() * players.length);
-        setSpyIndex(spy);
-
-        setCurrentPlayerIndex(0);
-        setGameState('reveal');
-        setIsRevealing(false);
+    const start = () => {
+        setWord(pickRandom(pickRandom(SPY_WORDS).words));
+        setSpyIndex(Math.floor(Math.random() * players.length));
+        setPlayerIndex(0);
+        setStage('reveal');
     };
 
     const nextPlayer = () => {
-        setIsRevealing(false);
-        if (currentPlayerIndex < players.length - 1) {
-            setCurrentPlayerIndex(prev => prev + 1);
-        } else {
-            setTimer(180);
-            setGameState('discuss');
-        }
+        if (playerIndex < players.length - 1) setPlayerIndex(i => i + 1);
+        else setStage('discuss');
     };
 
-    useEffect(() => {
-        if (gameState !== 'discuss') return;
-        const interval = setInterval(() => setTimer(t => Math.max(t - 1, 0)), 1000);
-        return () => clearInterval(interval);
-    }, [gameState]);
-
-    const formatTime = (s) => {
-        const m = Math.floor(s / 60);
-        const sec = s % 60;
-        return `${m}:${sec < 10 ? '0' : ''}${sec}`;
+    const vote = (index) => {
+        setVotedIndex(index);
+        setStage('result');
+        triggerHaptic(index === spyIndex ? HapticType.SUCCESS : HapticType.ERROR);
     };
-
-    useEffect(() => {
-        if (voteCountdown <= 0) return;
-        const timeout = setTimeout(() => {
-            if (voteCountdown === 1) {
-                setGameState('vote');
-                triggerHaptic(HapticType.SUCCESS);
-            } else {
-                triggerHaptic(HapticType.WARNING);
-            }
-            setVoteCountdown(v => v - 1);
-        }, 1000);
-        return () => clearTimeout(timeout);
-    }, [voteCountdown]);
 
     return (
-        <div className="full-screen" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-            <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10 }}>
-                <Button onClick={onNext} variant="secondary" style={{ padding: '5px 15px', minHeight: 'auto', fontSize: '0.8rem', background: 'rgba(0,0,0,0.5)' }}>{t('skip_card')} ⏭</Button>
-            </div>
+        <div className="full">
+            <Button variant="secondary" className="btn-small corner" onClick={onNext}>{t('skip_card')} ⏭</Button>
 
-            {gameState === 'setup' && (
-                <>
-                    <h1 style={{ color: '#fff' }}>🕵️ {t('mode_spy')}</h1>
-                    <p style={{ opacity: 0.7, marginBottom: '20px' }}>{t('spy_find_liar')}</p>
-                    {players.length < 3 ? <p style={{ color: '#ff5555' }}>{t('need_3_players')}</p> :
-                        <Button onClick={startGame} className="btn-liquid">{t('start_game')}</Button>
-                    }
-                </>
+            {stage === 'setup' && (
+                <div className="screen">
+                    <h1>🕵️ {t('mode_spy')}</h1>
+                    <p className="muted">{t('spy_find_liar')}</p>
+                    {players.length < 3 ? <p className="bad">{t('need_3_players')}</p> : <Button onClick={start}>{t('start_game')}</Button>}
+                </div>
             )}
 
-            {gameState === 'reveal' && (
-                <div style={{ textAlign: 'center', width: '100%' }}>
-                    <h2 style={{ marginBottom: '10px' }}>{t('spy_pass_to')}</h2>
-                    <h1 style={{ fontSize: '2.5rem', color: 'var(--color-primary)', marginBottom: '30px' }}>
-                        {players[currentPlayerIndex].name}
-                    </h1>
+            {stage === 'reveal' && (
+                <PassAndReveal
+                    key={playerIndex}
+                    playerName={players[playerIndex].name}
+                    secret={playerIndex === spyIndex ? t('spy_you_are_spy') : word}
+                    isImpostor={playerIndex === spyIndex}
+                    doneLabel={playerIndex === players.length - 1 ? t('start_game') : t('next_player')}
+                    onDone={nextPlayer}
+                />
+            )}
 
-                    <div
-                        onMouseDown={() => { setIsRevealing(true); triggerHaptic(HapticType.SELECTION); }}
-                        onMouseUp={() => { setIsRevealing(false); triggerHaptic(HapticType.LIGHT); }}
-                        onTouchStart={() => { setIsRevealing(true); triggerHaptic(HapticType.SELECTION); }}
-                        onTouchEnd={() => { setIsRevealing(false); triggerHaptic(HapticType.LIGHT); }}
-                        style={{
-                            width: '200px', height: '200px',
-                            borderRadius: '50%',
-                            background: isRevealing ? (currentPlayerIndex === spyIndex ? '#ff0055' : '#00ffff') : '#333',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            margin: '0 auto',
-                            userSelect: 'none',
-                            cursor: 'pointer',
-                            border: '4px solid rgba(255,255,255,0.1)'
-                        }}
-                    >
-                        {isRevealing ? (
-                            <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#000', textAlign: 'center', padding: '10px' }}>
-                                {currentPlayerIndex === spyIndex ? t('spy_you_are_spy') : secretWord}
-                            </span>
-                        ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                <span style={{ fontSize: '3rem' }}>👆</span>
-                                <span style={{ fontSize: '0.8rem', fontWeight: 'bold', marginTop: '5px' }}>{t('spy_hold_to_reveal')}</span>
-                            </div>
-                        )}
-                    </div>
+            {stage === 'discuss' && (
+                <div className="screen">
+                    <h1>{t('time')}: {formatTime(timeLeft)}</h1>
+                    <p className="muted">{t('spy_discuss')}</p>
+                    <div className="huge pulse">🕵️‍♂️</div>
+                    <Button onClick={() => setStage('vote')}>{t('spy_who_is_spy')}</Button>
+                </div>
+            )}
 
-                    <div style={{ marginTop: '40px' }}>
-                        {isRevealing && (
-                            <Button onClick={nextPlayer} variant="primary">
-                                {currentPlayerIndex === players.length - 1 ? t('start_game') : t('next_player')}
-                            </Button>
-                        )}
+            {stage === 'vote' && (
+                <div className="screen">
+                    <h2>{t('spy_who_is_spy')}</h2>
+                    <p className="muted">{t('spy_vote_hint')}</p>
+                    <div className="vote-grid">
+                        {players.map((p, i) => <Button key={p.id} variant="secondary" onClick={() => vote(i)}>{p.name}</Button>)}
                     </div>
                 </div>
             )}
 
-            {gameState === 'discuss' && (
-                <div style={{ textAlign: 'center' }}>
-                    <h1>{t('time')}: {formatTime(timer)}</h1>
-                    <p style={{ opacity: 0.8, marginBottom: '20px' }}>{t('spy_discuss')}</p>
-
-                    <div style={{
-                        width: '120px', height: '120px', borderRadius: '50%',
-                        border: '4px solid var(--color-primary)', display: 'flex',
-                        alignItems: 'center', justifyContent: 'center', margin: '20px auto',
-                        fontSize: '2rem', animation: 'pulse 2s infinite'
-                    }}>
-                        🕵️‍♂️
+            {stage === 'result' && (
+                <div className="screen">
+                    <div className="huge pop-in">{votedIndex === spyIndex ? '✅' : '❌'}</div>
+                    <h2>{votedIndex === spyIndex ? t('spy_found') : t('spy_wrong')}</h2>
+                    <div className="panel stack">
+                        <p className="muted small">{t('spy_the_spy_was')}</p>
+                        <h1 className="bad">{players[spyIndex].name}</h1>
+                        <p className="muted small">{t('spy_the_word_was')}</p>
+                        <h3 className="accent">{word}</h3>
                     </div>
-
-                    {voteCountdown > 0 ? (
-                        <div style={{ fontSize: '4rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>{voteCountdown}</div>
-                    ) : (
-                        <Button onClick={() => setVoteCountdown(3)} variant="primary" style={{ marginTop: '20px' }}>{t('start_countdown')}</Button>
-                    )}
-                </div>
-            )}
-
-            {gameState === 'vote' && (
-                <div style={{ textAlign: 'center', width: '100%', maxWidth: '400px' }}>
-                    <h2 style={{ marginBottom: '10px' }}>{t('spy_who_is_spy')}</h2>
-                    <p style={{ opacity: 0.6, marginBottom: '20px' }}>{t('spy_vote_hint')}</p>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                        {players.map((p, idx) => (
-                            <Button
-                                key={p.id}
-                                onClick={() => {
-                                    setVotedIndex(idx);
-                                    setGameState('result');
-                                    triggerHaptic(idx === spyIndex ? HapticType.SUCCESS : HapticType.ERROR);
-                                }}
-                                variant="secondary"
-                                style={{ padding: '15px' }}
-                            >
-                                {p.name}
-                            </Button>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {gameState === 'result' && (
-                <div style={{ textAlign: 'center' }}>
-                    <motion.div
-                        initial={{ scale: 0.5, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        style={{ fontSize: '4rem' }}
-                    >
-                        {votedIndex === spyIndex ? '✅' : '❌'}
-                    </motion.div>
-
-                    <h2 style={{ marginTop: '20px' }}>
-                        {votedIndex === spyIndex ? t('spy_found') : t('spy_wrong')}
-                    </h2>
-
-                    <div style={{ marginTop: '30px', padding: '20px', background: 'rgba(255,255,255,0.1)', borderRadius: '15px' }}>
-                        <p style={{ fontSize: '0.9rem', opacity: 0.7 }}>{t('spy_the_spy_was')}</p>
-                        <h1 style={{ color: '#ff0055' }}>{players[spyIndex].name}</h1>
-                        <p style={{ fontSize: '0.9rem', opacity: 0.7, marginTop: '10px' }}>{t('spy_the_word_was')}</p>
-                        <h3 style={{ color: 'var(--color-primary)' }}>{secretWord}</h3>
-                    </div>
-
-                    <Button onClick={onNext} variant="primary" style={{ marginTop: '30px' }}>{t('next_card')} ➡️</Button>
+                    <Button onClick={onNext}>{t('next_card')} ➡️</Button>
                 </div>
             )}
         </div>

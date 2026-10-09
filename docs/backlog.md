@@ -10,21 +10,19 @@ Known problems and improvement ideas, roughly by priority. Each item says *where
 4. **Hard-coded English UI text.** Several components bypass i18n: card type labels and reflex/precision/paranoia texts in `Card.jsx`, Bomb/Charades/Spy/Fake Artist screens, `FingerChooser`, `Disclaimer`, "PARTY MVP" and the streak toast in `GameScreen.jsx`.
 5. **Card titles show raw types** ("statement", "standard", "charade") – `TYPE_LABELS` in `Card.jsx` only covers a few types; should be translated labels.
 6. **Swipe semantics are invisible.** On choice cards (truth/dare/"… or drink") swipe right = done, swipe left = penalty, tap does nothing. There is no on-screen hint.
-7. **Hold-to-reveal in Spy / Fake Artist.** The "next" button only shows while the reveal circle is held, which needs two fingers on touch screens.
-8. **Game-over screen is practically unreachable.** `finishGame` has no UI trigger and `nextCard()` always refills the deck, so the scoreboard only appears if no card matches at all. Add an "End game" action (e.g. in the ☰ menu).
-9. **Name.** `capacitor.config.json` still says `appName: "Party Penguin"`; the app and docs say Trinki (mascot is a raccoon 🦝). Decide and make consistent.
+7. **Game-over screen is practically unreachable.** `finishGame` has no UI trigger and `nextCard()` always refills the deck, so the scoreboard only appears if no card matches at all. Add an "End game" action (e.g. in the ☰ menu).
+8. **Name.** `capacitor.config.json` still says `appName: "Party Penguin"`; the app and docs say Trinki (mascot is a raccoon 🦝). Decide and make consistent.
 
 ## Code simplicity
 
-10. **Inline styles.** ~300 `style={{…}}` blocks in `src/components`. Moving repeated ones (overlays, round icon buttons, section headings, minigame layouts) into a few CSS classes in `index.css` would cut a lot of lines and make the look consistent.
-11. **Large components.** `GameScreen.jsx` and `Card.jsx` (~500 lines each) mix layout and logic. Possible splits: game-over screen and active-rules sheet into their own files; one small component per interactive card type.
-12. **English card text lives in JS, translations in JSON.** Fine for now; if content grows a lot, consider moving the English text into `locales/challenges/en.json` too.
+9. **Large components.** `Card.jsx` and `GameScreen.jsx` (~250 lines each) are the biggest files. If they grow, split per card type / move the game-over screen and rules sheet into their own files.
+10. **English card text lives in JS, translations in JSON.** Fine for now; if content grows a lot, consider moving the English text into `locales/challenges/en.json` too.
 
 ## Performance
 
-13. **Bundle.** React (~230 KB) and motion (~130 KB) dominate the start bundle. `Reorder` (player drag-sort in `SetupScreen`) is the main reason the full motion bundle is needed; replacing it would allow `LazyMotion` + `m` components.
-14. **Measure on a real device.** All measurements so far are from headless Chromium with CPU throttling; GPU costs (shadows, gradients, confetti) are only visible on a real low-end phone. Use a release build.
+11. **Bundle.** The start bundle is ~100 KB gzip, mostly React. Budget is enforced by `npm run size`; lower `BUDGET_KB` in `scripts/check-size.js` to lock in gains.
+12. **Measure on a real device.** All measurements so far are from headless Chromium with CPU throttling; GPU costs (shadows, gradients, confetti) are only visible on a real low-end phone. Use a release build.
 
 ## Native
 
-15. **Android/iOS projects are not in the repo.** Icons/splash screens for the native apps must be generated after `npx cap add android` (e.g. with `@capacitor/assets`); the source icon is `public/assets/icon-512.png`.
+13. **Android/iOS projects are not in the repo.** Icons/splash screens for the native apps must be generated after `npx cap add android` (e.g. with `@capacitor/assets`); the source icon is `public/assets/icon-512.png`.
