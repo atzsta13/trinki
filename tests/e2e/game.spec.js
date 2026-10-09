@@ -47,9 +47,12 @@ const advance = async (page) => {
 const startParty = async (page, onlyModes) => {
     await page.goto('/');
     if (onlyModes) {
+        // Click each active mode exactly once (element handles don't re-resolve between clicks).
         const active = page.locator('.mode-card.active');
-        while (await active.count()) await active.first().click();
+        for (const mode of await active.elementHandles()) await mode.click();
+        await expect(active).toHaveCount(0);
         for (const name of onlyModes) await page.locator('.mode-card', { hasText: name }).first().click();
+        await expect(active).toHaveCount(onlyModes.length);
     }
     await page.getByRole('button', { name: /•/ }).click();
     await expect(page.locator('[data-card]')).toBeVisible();

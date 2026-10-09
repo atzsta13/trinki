@@ -1,52 +1,40 @@
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useGame } from '../../logic/GameContext';
-import Button from '../Shared/Button';
+import { useT } from '../../i18n';
+import Button from './Button';
 
 const CustomCardInput = () => {
     const { customCards, addCustomCard, removeCustomCard } = useGame();
-    const { t } = useTranslation();
+    const t = useT();
     const [text, setText] = useState('');
 
     const handleAdd = (e) => {
         e.preventDefault();
-        if (text.trim()) {
-            addCustomCard(text.trim());
-            setText('');
-        }
+        if (!text.trim()) return;
+        addCustomCard(text.trim());
+        setText('');
     };
 
     return (
-        <div style={{ width: '100%', marginTop: '20px' }}>
-            <h3 className="setup-title">{t('custom_cards')}</h3>
-
-            <form onSubmit={handleAdd} style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+        <section className="stack">
+            <h3 className="section-title">{t('custom_cards')}</h3>
+            <form onSubmit={handleAdd} className="row">
                 <input
-                    type="text"
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     placeholder={t('custom_card_placeholder')}
                     className="input-field"
-                    style={{
-                        flex: 1,
-                        padding: '15px',
-                        borderRadius: '12px',
-                        fontSize: '1rem'
-                    }}
                 />
-                <Button type="submit" variant="secondary" style={{ padding: '15px', minWidth: '60px', border: '2px solid var(--color-primary)', color: 'var(--color-primary)' }}>+</Button>
+                <Button type="submit" variant="secondary">+</Button>
             </form>
-
-            <div style={{ maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {customCards.map(card => (
-                    <div key={card.id} className="player-chip" style={{ justifyContent: 'space-between', borderRadius: '12px' }}>
-                        <span style={{ flex: 1, marginRight: '10px' }}>{card.text}</span>
-                        <span onClick={() => removeCustomCard(card.id)} style={{ color: '#ff0055', cursor: 'pointer', fontWeight: 'bold', padding: '5px' }}>✕</span>
-                    </div>
-                ))}
-                {customCards.length === 0 && <p style={{ opacity: 0.5, fontSize: '0.9rem', fontStyle: 'italic', margin: 0 }}>{t('no_custom_cards')}</p>}
-            </div>
-        </div>
+            {customCards.map(card => (
+                <div key={card.id} className="player-chip">
+                    <span>{card.text}</span>
+                    <button className="chip-remove" onClick={() => removeCustomCard(card.id)}>✕</button>
+                </div>
+            ))}
+            {customCards.length === 0 && <p className="muted small">{t('no_custom_cards')}</p>}
+        </section>
     );
 };
 

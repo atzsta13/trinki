@@ -32,7 +32,7 @@ Native builds (Android/iOS): see [docs/native-builds.md](docs/native-builds.md).
 | :--- | :--- | :--- |
 | ESLint + React Compiler rules | `eslint.config.js` | undefined vars, hook misuse, code the compiler can't optimize |
 | Unit tests | `tests/unit/` | broken cards, modes without packs, missing/unknown i18n keys, wrong placeholders, deck logic |
-| Size budget | `scripts/check-size.js` | start bundle > 180 KB gzip |
+| Size budget | `scripts/check-size.js` | start bundle > 115 KB gzip |
 | E2E | `tests/e2e/game.spec.js` | crashes, console errors, stuck cards, minigames without exit, raw i18n keys on screen, German UI |
 | CI | `.github/workflows/ci.yml` | runs `check` + e2e on every PR and push to main; traces uploaded on failure |
 
@@ -40,7 +40,9 @@ E2E tests wait on `data-card` (the dealt card's `instanceId` on the game screen)
 
 ## Stack
 
-React 19 + **React Compiler** (no manual `useMemo`/`useCallback`/`memo` needed) · Vite 8 · `motion` 14 (animations + card swipe) · i18next 26 · Capacitor 8 (+ `@capacitor/haptics`) · plain JavaScript (JSX), no TypeScript · plain CSS (`src/index.css`) plus inline styles.
+React 19 + **React Compiler** (no manual `useMemo`/`useCallback`/`memo` needed) · Vite 8 · Capacitor 8 (+ `@capacitor/haptics`) · plain JavaScript (JSX), no TypeScript · one plain CSS file (`src/index.css`).
+
+Deliberately **no** animation library (CSS keyframes + a small pointer-event swipe), **no** i18n library (`src/i18n.js`, ~60 lines), no state library, no router. Runtime dependencies are React, Capacitor and two font packages — keep it that way unless there's a strong reason.
 
 ## Code map
 
@@ -48,8 +50,8 @@ React 19 + **React Compiler** (no manual `useMemo`/`useCallback`/`memo` needed) 
 src/
   main.jsx               entry: fonts, CSS, waits for i18n, renders <App>
   App.jsx                disclaimer gate + screen switch by gameState (setup | playing | finished | chooser)
-  i18n.js                i18next setup; locales are lazy-loaded per language
-  index.css              all global styles + the neon theme (CSS variables)
+  i18n.js                tiny i18n: useT() hook, English fallback, {{var}} interpolation, lazy-loaded locales
+  index.css              all styles: tokens (CSS variables), layout/text helpers, components, animations
   logic/
     GameContext.jsx      the single app state (players, settings, deck, current card) + persistence
     deck.js              getDeck(): picks cards for the selected modes, spiciness filter, player assignment
@@ -64,7 +66,7 @@ src/
   components/
     Screens/             SetupScreen, GameScreen (+ SwipeCard, game over, active rules), FingerChooser, Disclaimer
     Shared/              Card (renders every non-minigame card type), Button, SettingsModal, CustomCardInput
-    Games/               one file per minigame; lazy-loaded; props: { card, onNext }
+    Games/               one file per minigame; lazy-loaded; props: { card, onNext }. PassAndReveal = shared "pass the phone, tap to see your secret" step
   locales/
     <lang>.json          UI strings
     challenges/<lang>.json  card translations keyed by card id (+ Secrets/Dark Tales UI strings)
@@ -76,7 +78,7 @@ public/                  icons, web manifest, privacy.html (store privacy policy
 
 ## How the game works (data flow)
 
-1. **Setup** (`SetupScreen`): players (order = seating order, drag to reorder), spiciness 0–6, selected mode ids.
+1. **Setup** (`SetupScreen`): players (order = seating order, ▲ moves a player up), spiciness 0–6, selected mode ids.
 2. `launchGame(modes)` → `getDeck()` builds 50 cards:
    mode ids → `MODE_PACKS` (deck.js) → cards whose `packs` match → spiciness filter (`max(0, level-3) ≤ card ≤ level`) → custom cards always added → prefer cards not in the play history → each card gets `instanceId`, `args` (`p1`, `p2`, `p_left`, `p_right`, `p_opposite`) and `targetPlayerId`.
 3. **GameScreen** shows `currentCard`:
@@ -85,7 +87,7 @@ public/                  icons, web manifest, privacy.html (store privacy policy
 4. `nextCard()` refills the deck when empty. Virus cards are also collected as "active rules".
 5. **Game over** shows the scoreboard; "Play again" relaunches with the same modes and resets scores.
 
-Persistence (`localStorage`): `trinki_players`, `trinki_settings`, `trinki_played_cards` (last 500 ids), `trinki_custom_cards`, `trinki_disclaimer_accepted`, `trinki_skipped_names`, `i18nextLng`.
+Persistence (`localStorage`): `trinki_players`, `trinki_settings`, `trinki_played_cards` (last 500 ids), `trinki_custom_cards`, `trinki_disclaimer_accepted`, `trinki_skipped_names`. The language is part of `trinki_settings`.
 
 ## Common tasks
 
@@ -104,13 +106,15 @@ Persistence (`localStorage`): `trinki_players`, `trinki_settings`, `trinki_playe
 - Function components + hooks only. One component per file; small helpers may live in the same file.
 - Follow the React Compiler rules that `npm run lint` enforces: no `Math.random()`/`Date.now()` during render, no reading/writing `ref.current` during render, no `setState` directly inside effects; put side effects in event handlers or effects, never inside state updater functions.
 - State lives in `GameContext`; components keep only local UI state.
+- Styling: use the classes in `index.css` (layout helpers like `screen`, `stack`, `row`, text helpers like `muted`, `big`, `accent`). Inline `style` only for values computed at runtime (e.g. finger position).
+- Translations: `const t = useT();` then `t('key')` / `t('key', { name })`. Keys must be string literals so the tests can check them.
 - English is the source language for content; German is the second fully maintained language.
 - Keep comments for the *why*, not the *what*. Match the surrounding style (4-space indent in `src/`, single quotes).
 
 ## Performance rules (low-end Android)
 
 - No `backdrop-filter`/blur, no animated `background-position`, no `transition: all`. Animate only `transform` and `opacity`.
-- Don't re-render at high frequency: timers render whole seconds; motion values (not React state) drive drag/animations.
+- Don't re-render at high frequency: timers render whole seconds; the card swipe moves the DOM element directly (no React state per pointer move).
 - Keep heavy things lazy: minigames and locales are separate chunks. Don't import large libraries on the start path.
 - Native bridge calls (haptics) are not free — no haptics on every pointer move.
 - Check `npm run build` output for bundle size when adding a dependency.
@@ -118,8 +122,8 @@ Persistence (`localStorage`): `trinki_players`, `trinki_settings`, `trinki_playe
 ## Gotchas
 
 - `src/logic/challenges.js` (English cards) and `src/locales/challenges/*.json` (translations) are different things despite the name.
-- `fallbackNS: 'challenges'` in i18n.js: some UI strings (Secrets, Dark Tales) live in the challenges namespace.
-- Card `text` may contain `{{p1}}` etc. Translation happens in `Card`/`GameScreen` via `t('challenges:<id>', { ...args, defaultValue: text })`.
+- UI strings and card translations are merged into one key space per language; some UI strings (Secrets, Dark Tales) live in `locales/challenges/*.json`.
+- Card `text` may contain `{{p1}}` etc. Translation happens in `Card`/`GameScreen` via `t(card.translationKey, { ...args, defaultValue: text })`.
 - `instanceId` (not `id`) identifies a dealt card; React keys and the virus list use it.
 - The React Compiler reads values used in event handlers *during render* (as memo dependencies). Derive them null-safely (`currentCard?.x`) — while leaving the game, GameScreen renders once more with `currentCard === null`.
 - `__APP_VERSION__` is injected from `package.json` by Vite.

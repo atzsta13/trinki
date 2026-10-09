@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import { motion, AnimatePresence, useAnimationControls, useMotionValue, useTransform } from 'motion/react';
-import { useTranslation } from 'react-i18next';
 import { useGame } from '../../logic/GameContext';
+import { useT } from '../../i18n';
 import Card from '../Shared/Card';
 import Button from '../Shared/Button';
 import SettingsModal from '../Shared/SettingsModal';
@@ -23,296 +22,161 @@ const TTS_LOCALES = {
     pt: 'pt-PT', nl: 'nl-NL', pl: 'pl-PL', tr: 'tr-TR', sv: 'sv-SE'
 };
 
-const SWIPE_THRESHOLD = 100;
-const SWIPE_VELOCITY = 500; // px/s
+const SWIPE_THRESHOLD = 100; // px
+const SWIPE_VELOCITY = 0.5; // px/ms
 const CHOICE_PATTERN = /(or drink|or penalty|or finish|if you refuse|if yes, drink|if yes penalty|if yes take)/i;
 
-const roundButtonStyle = {
-    width: '44px', height: '44px',
-    padding: 0,
-    fontSize: '1.4rem',
-    borderRadius: '50%',
-    background: 'rgba(255,255,255,0.1)',
-    boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
+// Drag-to-swipe for one card. Moves the element directly (no React render per pointer move);
+// past the threshold the card flies out and `onSwipe(direction)` is called.
+const SwipeCard = ({ onSwipe, children }) => {
+    const ref = useRef(null);
+    const drag = useRef(null);
+    const dragged = useRef(false); // the current gesture is a drag, not a tap
+    const gone = useRef(false);
+
+    const place = (x, transition = 'none') => {
+        const el = ref.current;
+        el.style.transition = transition;
+        el.style.transform = `translateX(${x}px) rotate(${Math.max(-25, Math.min(25, x / 8))}deg)`;
+    };
+
+    const flyOut = (direction) => {
+        gone.current = true;
+        triggerHaptic(HapticType.HEAVY);
+        place(600 * direction, 'transform 0.2s ease-in, opacity 0.2s ease-in');
+        ref.current.style.opacity = '0';
+        setTimeout(() => onSwipe(direction), 200);
+    };
+
+    const onPointerDown = (e) => {
+        if (gone.current) return;
+        dragged.current = false;
+        drag.current = { id: e.pointerId, startX: e.clientX, x: 0, lastX: e.clientX, lastTime: e.timeStamp, velocity: 0, moved: false };
+    };
+
+    const onPointerMove = (e) => {
+        const d = drag.current;
+        if (!d || d.id !== e.pointerId) return;
+        const x = e.clientX - d.startX;
+        if (!d.moved && Math.abs(x) > 6) {
+            d.moved = true;
+            dragged.current = true;
+            // Capture only once it's a drag, so plain taps still reach the card's onClick.
+            ref.current.setPointerCapture(e.pointerId);
+        }
+        if (Math.abs(x) >= SWIPE_THRESHOLD && Math.abs(d.x) < SWIPE_THRESHOLD) triggerHaptic(HapticType.MEDIUM);
+        d.velocity = (e.clientX - d.lastX) / Math.max(e.timeStamp - d.lastTime, 1);
+        d.lastX = e.clientX;
+        d.lastTime = e.timeStamp;
+        d.x = x;
+        if (d.moved) place(x);
+    };
+
+    const onPointerUp = () => {
+        const d = drag.current;
+        drag.current = null;
+        if (!d?.moved) return;
+        if (d.x > SWIPE_THRESHOLD || d.velocity > SWIPE_VELOCITY) flyOut(1);
+        else if (d.x < -SWIPE_THRESHOLD || d.velocity < -SWIPE_VELOCITY) flyOut(-1);
+        else place(0, 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1.2)');
+    };
+
+    return (
+        <div
+            ref={ref}
+            className="swipe-card"
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
+            // A drag ends with a click; it must not also count as a tap on the card.
+            onClickCapture={(e) => { if (gone.current || dragged.current) e.stopPropagation(); }}
+        >
+            {children}
+        </div>
+    );
 };
 
 const GameOverScreen = ({ players, onPlayAgain, onHome }) => {
-    const { t } = useTranslation();
-    const sortedPlayers = [...players].sort((a, b) => (b.drinkCount || 0) - (a.drinkCount || 0));
-    const [mvp, ...rest] = sortedPlayers;
+    const t = useT();
+    const [mvp, ...rest] = [...players].sort((a, b) => (b.drinkCount || 0) - (a.drinkCount || 0));
 
     return (
-        <div className="full-screen" style={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: '30px',
-            padding: '20px',
-            textAlign: 'center'
-        }}>
-            <motion.div
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-            >
-                <h2 style={{ fontSize: '3.5rem', margin: 0, textShadow: '0 0 20px rgba(255, 0, 153, 0.6)' }}>
-                    {t('game_over')}
-                </h2>
-                <p style={{ fontSize: '1.2rem', opacity: 0.8 }}>{t('hope_epic')}</p>
-            </motion.div>
-
+        <div className="screen">
+            <div className="pop-in">
+                <h2 className="glow">{t('game_over')}</h2>
+                <p className="muted">{t('hope_epic')}</p>
+            </div>
             {mvp && (
-                <motion.div
-                    initial={{ y: 50, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="glass-panel"
-                    style={{
-                        padding: '30px',
-                        width: '100%',
-                        maxWidth: '350px',
-                        background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(0,0,0,0.4))',
-                        borderColor: 'gold',
-                        boxShadow: '0 0 30px rgba(255, 215, 0, 0.3)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        position: 'relative'
-                    }}
-                >
-                    <div style={{ fontSize: '4rem', position: 'absolute', top: '-40px' }}>👑</div>
-                    <h3 style={{ color: 'gold', fontSize: '1.5rem', marginBottom: '10px', marginTop: '20px' }}>PARTY MVP</h3>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{mvp.name}</div>
-                    <div style={{ fontSize: '1.2rem', opacity: 0.8 }}>{mvp.drinkCount || 0} {t('points')}</div>
-                </motion.div>
+                <div className="panel mvp pop-in">
+                    <div className="mvp-crown">👑</div>
+                    <h3 className="gold">PARTY MVP</h3>
+                    <div className="huge">{mvp.name}</div>
+                    <div className="muted">{mvp.drinkCount || 0} {t('points')}</div>
+                </div>
             )}
-
-            <div style={{ width: '100%', maxWidth: '350px', display: 'flex', flexDirection: 'column', gap: '10px', height: '150px', overflowY: 'auto' }}>
+            <div className="stack scoreboard">
                 {rest.map((p, i) => (
-                    <div key={p.id} style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        padding: '12px 20px',
-                        background: 'rgba(255,255,255,0.05)',
-                        borderRadius: '12px',
-                        alignItems: 'center'
-                    }}>
-                        <span style={{ fontWeight: 'bold' }}>#{i + 2} {p.name}</span>
+                    <div key={p.id} className="player-chip">
+                        <strong>#{i + 2} {p.name}</strong>
                         <span>{p.drinkCount || 0} {t('points')}</span>
                     </div>
                 ))}
             </div>
-
-            <div style={{ display: 'flex', gap: '15px', width: '100%', maxWidth: '350px' }}>
-                <Button onClick={onPlayAgain} fullWidth variant="primary">
-                    {t('play_again')} 🔄
-                </Button>
-                <Button onClick={onHome} fullWidth variant="secondary">
-                    🏠
-                </Button>
+            <div className="row full-width">
+                <Button className="grow" onClick={onPlayAgain}>{t('play_again')} 🔄</Button>
+                <Button variant="secondary" onClick={onHome}>🏠</Button>
             </div>
         </div>
     );
 };
 
 const ActiveRulesSheet = ({ rules, getCardText, onEnd, onClose }) => {
-    const { t } = useTranslation();
-
+    const t = useT();
     return (
-        <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            style={{
-                position: 'absolute',
-                top: 0, left: 0, width: '100%', height: '100%',
-                background: 'rgba(0,0,0,0.8)',
-                zIndex: 300,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'flex-end'
-            }}
-        >
-            <div style={{
-                width: '100%',
-                background: 'var(--color-card-bg)',
-                borderTopLeftRadius: '24px',
-                borderTopRightRadius: '24px',
-                borderTop: '1px solid var(--color-card-border)',
-                boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
-                display: 'flex',
-                flexDirection: 'column',
-                padding: '24px',
-                boxSizing: 'border-box'
-            }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <h2 style={{ fontSize: '1.8rem', color: 'var(--color-primary)' }}>{t('active_rules')}</h2>
-                    <Button onClick={onClose} variant="secondary" style={{ borderRadius: '50%', width: '40px', height: '40px', padding: 0 }}>✕</Button>
+        <div className="sheet-backdrop" onClick={onClose}>
+            <div className="sheet stack" onClick={(e) => e.stopPropagation()}>
+                <div className="row spread">
+                    <h2 className="accent">{t('active_rules')}</h2>
+                    <Button variant="icon" onClick={onClose}>✕</Button>
                 </div>
-
-                {rules.length === 0 ? (
-                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', opacity: 0.6 }}>
-                        <span style={{ fontSize: '3rem', marginBottom: '10px' }}>🧘</span>
-                        <p>{t('no_active_rules')}</p>
+                {rules.length === 0 && <p className="muted center">🧘 {t('no_active_rules')}</p>}
+                {rules.map(rule => (
+                    <div key={rule.instanceId} className="rule">
+                        <p>{getCardText(rule)}</p>
+                        <Button variant="secondary" className="btn-small danger-text" onClick={() => onEnd(rule.instanceId)}>{t('end_rule')}</Button>
                     </div>
-                ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', overflowY: 'auto' }}>
-                        {rules.map((rule, i) => (
-                            <motion.div
-                                key={rule.instanceId}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: i * 0.1 }}
-                                style={{
-                                    background: 'rgba(255,255,255,0.05)',
-                                    padding: '15px',
-                                    borderRadius: '16px',
-                                    borderLeft: '4px solid #00FF66',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center'
-                                }}
-                            >
-                                <p style={{ margin: 0, fontSize: '1rem', flex: 1, fontWeight: '500' }}>{getCardText(rule)}</p>
-                                <Button
-                                    onClick={() => onEnd(rule.instanceId)}
-                                    variant="secondary"
-                                    style={{ padding: '8px 12px', fontSize: '0.8rem', marginLeft: '10px', borderColor: '#ff5555', color: '#ff5555' }}
-                                >
-                                    {t('end_rule')}
-                                </Button>
-                            </motion.div>
-                        ))}
-                    </div>
-                )}
+                ))}
             </div>
-        </motion.div>
-    );
-};
-
-// One instance per card (keyed by the parent), so every card starts with fresh motion values.
-// Swiping right/left flies the card out and then reports the direction.
-const SwipeCard = ({ onSwipe, children }) => {
-    const x = useMotionValue(0);
-    const rotate = useTransform(x, [-200, 200], [-25, 25]);
-    const controls = useAnimationControls();
-    // A drag ends with a click on the card; this keeps it from also counting as a tap.
-    const draggedRef = useRef(false);
-    const swipedRef = useRef(false);
-
-    useEffect(() => {
-        controls.start({ scale: 1, opacity: 1, y: 0 });
-    }, [controls]);
-
-    const flyOut = (direction) => {
-        if (swipedRef.current) return;
-        swipedRef.current = true;
-        triggerHaptic(HapticType.HEAVY);
-        controls.start({
-            x: 600 * direction,
-            opacity: 0,
-            scale: 0.8,
-            rotate: 20 * direction,
-            transition: { duration: 0.2, ease: 'easeIn' }
-        }).then(() => onSwipe(direction));
-    };
-
-    const handleDrag = (_, { offset }) => {
-        const prev = x.getPrevious() ?? 0;
-        // Single distinct tick when crossing the dismissal threshold.
-        if (Math.abs(offset.x) >= SWIPE_THRESHOLD && Math.abs(prev) < SWIPE_THRESHOLD) {
-            triggerHaptic(HapticType.MEDIUM);
-        }
-    };
-
-    const handleDragEnd = (_, { offset, velocity }) => {
-        if (offset.x > SWIPE_THRESHOLD || velocity.x > SWIPE_VELOCITY) {
-            flyOut(1);
-        } else if (offset.x < -SWIPE_THRESHOLD || velocity.x < -SWIPE_VELOCITY) {
-            flyOut(-1);
-        } else {
-            // High-stiffness spring for a "snap back" feel
-            controls.start({
-                x: 0, rotate: 0,
-                transition: { type: 'spring', stiffness: 800, damping: 35 }
-            });
-        }
-    };
-
-    return (
-        <motion.div
-            drag="x"
-            dragMomentum={false}
-            dragElastic={0.9}
-            onPointerDown={() => { draggedRef.current = false; }}
-            onDragStart={() => { draggedRef.current = true; }}
-            onDrag={handleDrag}
-            onDragEnd={handleDragEnd}
-            onClickCapture={(e) => { if (draggedRef.current || swipedRef.current) e.stopPropagation(); }}
-            animate={controls}
-            initial={{ scale: 0.8, opacity: 0, y: 50 }}
-            exit={{ scale: 0.8, opacity: 0, y: -50, transition: { duration: 0.15 } }}
-            style={{
-                x,
-                rotate,
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                cursor: 'grab',
-                touchAction: 'pan-y'
-            }}
-        >
-            {children}
-        </motion.div>
+        </div>
     );
 };
 
 const GameScreen = () => {
     const {
-        currentCard,
-        gameMode,
-        nextCard,
-        gameState,
-        launchGame,
-        goHome,
-        players,
-        updatePlayerDrinkCount,
-        updatePlayerStreak,
-        settings,
-        activeViruses,
-        removeVirus
+        currentCard, gameMode, nextCard, gameState, launchGame, goHome, players,
+        updatePlayerDrinkCount, updatePlayerStreak, settings, activeViruses, removeVirus
     } = useGame();
-
-    const { t } = useTranslation();
+    const t = useT();
     const [showSettings, setShowSettings] = useState(false);
     const [showRules, setShowRules] = useState(false);
-    const [streakNotification, setStreakNotification] = useState(null);
+    const [streakMessage, setStreakMessage] = useState(null);
     const [ttsEnabled, setTtsEnabled] = useState(false);
 
-
-    const getCardText = (card) => {
-        if (!card) return '';
-        if (card.translationKey) {
-            return t(`challenges:${card.translationKey}`, { ...card.args, defaultValue: card.text }) || card.text || '';
-        }
-        return card.text || '';
-    };
+    const getCardText = (card) => (card ? t(card.translationKey, { ...card.args, defaultValue: card.text }) : '');
 
     // Derived null-safely: while leaving the game the screen still renders once with no card,
     // and the React Compiler reads values used by handlers during render.
     const currentText = getCardText(currentCard);
     const targetPlayerId = currentCard?.targetPlayerId;
     const cardPoints = currentCard?.points || currentCard?.sips;
+    // Truth/dare and "... or drink" cards are resolved by swiping: right = done, left = penalty.
+    const isChoiceCard = currentCard?.type === 'truth' || currentCard?.type === 'dare' || CHOICE_PATTERN.test(currentText);
 
     useEffect(() => {
         if (!('speechSynthesis' in window)) return;
         window.speechSynthesis.cancel();
         if (!ttsEnabled || !currentText) return;
-
         const utterance = new SpeechSynthesisUtterance(currentText);
         utterance.lang = TTS_LOCALES[settings.language] || 'en-US';
         window.speechSynthesis.speak(utterance);
@@ -321,17 +185,14 @@ const GameScreen = () => {
     const handleCardResult = (success) => {
         if (!targetPlayerId) return;
         updatePlayerStreak(targetPlayerId, success);
-        if (!success) return;
-
         const player = players.find(p => p.id === targetPlayerId);
-        const newStreak = (player?.streak || 0) + 1;
-        if (!player || newStreak < 3) return;
+        const streak = (player?.streak || 0) + 1;
+        if (!success || !player || streak < 3) return;
 
-        setStreakNotification(`${player.name} is on fire! 🔥 ${newStreak}`);
-        setTimeout(() => setStreakNotification(null), 3000);
+        setStreakMessage(`${player.name} is on fire! 🔥 ${streak}`);
+        setTimeout(() => setStreakMessage(null), 3000);
         playSuccess();
-
-        if (newStreak >= 5) {
+        if (streak >= 5) {
             triggerEmojiBurst(['👑', '💎', '🦄', '✨']);
             triggerConfetti();
         } else {
@@ -339,42 +200,26 @@ const GameScreen = () => {
         }
     };
 
-    // Truth/dare and "... or drink" cards are resolved by swiping: right = done, left = penalty.
-    const isChoiceCard = () => {
-        if (currentCard?.type === 'truth' || currentCard?.type === 'dare') return true;
-        return CHOICE_PATTERN.test(currentText);
-    };
-
-    const getPenaltyAmount = () => {
+    const penaltyAmount = () => {
         if (cardPoints) return cardPoints;
         const text = currentText.toLowerCase();
-        const match = text.match(/(?:drink|penalty|points|take|lose) (\d+)/i);
+        const match = text.match(/(?:drink|penalty|points|take|lose) (\d+)/);
         if (match) return parseInt(match[1], 10);
-        if (text.includes('finish your drink')) return 5;
-        return 1;
+        return text.includes('finish your drink') ? 5 : 1;
     };
 
-    const handleChoice = (tookPenalty) => {
-        if (tookPenalty) {
+    const handleSwipe = (direction) => {
+        if (!isChoiceCard) {
+            playPop();
+            if (direction < 0 && Math.random() > 0.7) triggerEmojiBurst(['💀', '📉', '🥀', '🤏']);
+        } else if (direction < 0) {
             playError();
             triggerHaptic(HapticType.HEAVY);
-            if (targetPlayerId) {
-                updatePlayerDrinkCount(targetPlayerId, getPenaltyAmount());
-            }
+            if (targetPlayerId) updatePlayerDrinkCount(targetPlayerId, penaltyAmount());
         } else {
             playSuccess();
             triggerHaptic(HapticType.SUCCESS);
         }
-        nextCard();
-    };
-
-    const handleSwipe = (direction) => {
-        if (isChoiceCard()) {
-            handleChoice(direction < 0);
-            return;
-        }
-        playPop();
-        if (direction < 0 && Math.random() > 0.7) triggerEmojiBurst(['💀', '📉', '🥀', '🤏']);
         nextCard();
     };
 
@@ -388,7 +233,7 @@ const GameScreen = () => {
         return (
             <GameOverScreen
                 players={players}
-                onPlayAgain={() => { playClick(); triggerHaptic(HapticType.MEDIUM); launchGame(gameMode); }}
+                onPlayAgain={() => { playClick(); launchGame(gameMode); }}
                 onHome={() => { playClick(); goHome(); }}
             />
         );
@@ -398,147 +243,55 @@ const GameScreen = () => {
 
     const Minigame = MINIGAMES[currentCard.type];
     if (Minigame) {
-        const onNext = () => { playSuccess(); nextCard(); };
         return (
-            <div className="full-screen" data-card={currentCard.instanceId}>
+            // data-card lets the e2e tests see exactly when the next card is dealt.
+            <div className="full" data-card={currentCard.instanceId}>
                 <Suspense fallback={null}>
-                    <Minigame key={currentCard.instanceId} card={currentCard} onNext={onNext} />
+                    <Minigame key={currentCard.instanceId} card={currentCard} onNext={() => { playSuccess(); nextCard(); }} />
                 </Suspense>
             </div>
         );
     }
 
-    const choiceCard = isChoiceCard();
-
     return (
-        // data-card lets the e2e tests see exactly when the next card is dealt.
-        <div className="full-screen" data-card={currentCard.instanceId} style={{
-            display: 'flex',
-            flexDirection: 'column',
-            position: 'relative',
-            overflow: 'hidden'
-        }}>
-            <AnimatePresence>
-                {streakNotification && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -20, scale: 0.8 }}
-                        animate={{ opacity: 1, y: 0, scale: 1.1 }}
-                        exit={{ opacity: 0, y: -20, scale: 0.8 }}
-                        transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-                        style={{
-                            position: 'absolute',
-                            top: '80px',
-                            left: '50%',
-                            x: '-50%',
-                            padding: '12px 30px',
-                            borderRadius: '30px',
-                            color: '#fff',
-                            fontWeight: '800',
-                            letterSpacing: '0.05em',
-                            fontSize: '1.2rem',
-                            zIndex: 200,
-                            boxShadow: '0 10px 30px rgba(255, 0, 85, 0.6)',
-                            background: 'linear-gradient(45deg, #FF0099, #FF5400)',
-                            textAlign: 'center',
-                            minWidth: '200px'
-                        }}
-                    >
-                        {streakNotification}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+        <div className="game" data-card={currentCard.instanceId}>
+            {streakMessage && <div className="toast">{streakMessage}</div>}
 
-            <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                padding: '20px',
-                zIndex: 100,
-                alignItems: 'center'
-            }}>
-                <Button onClick={() => { playClick(); setShowSettings(true); }} variant="secondary" style={roundButtonStyle}>
-                    ☰
+            <div className="game-bar">
+                <Button variant="icon" onClick={() => { playClick(); setShowSettings(true); }}>☰</Button>
+                <Button variant="icon" className={ttsEnabled ? 'on' : ''} onClick={() => { playClick(); setTtsEnabled(on => !on); }}>
+                    {ttsEnabled ? '🗣️' : '🔇'}
                 </Button>
-
-                <div style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: '10px' }}>
-                    <Button
-                        onClick={() => { playClick(); setTtsEnabled(on => !on); }}
-                        variant="secondary"
-                        style={{ ...roundButtonStyle, width: '40px', height: '40px', fontSize: '1.1rem', background: ttsEnabled ? 'var(--color-primary)' : roundButtonStyle.background }}
-                    >
-                        {ttsEnabled ? '🗣️' : '🔇'}
-                    </Button>
-
-                    {activeViruses.length > 0 && (
-                        <div
-                            onClick={() => { playClick(); setShowRules(true); }}
-                            style={{
-                                background: '#9900ff',
-                                color: 'white',
-                                padding: '5px 15px',
-                                borderRadius: '20px',
-                                fontSize: '0.8rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '5px',
-                                boxShadow: '0 0 10px #9900ff',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            <span>📜</span>
-                            <span>{activeViruses.length}</span>
-                        </div>
-                    )}
-                </div>
-
-                <div style={{ width: '44px' }} />
-            </div>
-
-            <AnimatePresence>
-                {showRules && (
-                    <ActiveRulesSheet
-                        rules={activeViruses}
-                        getCardText={getCardText}
-                        onEnd={(id) => { playClick(); removeVirus(id); }}
-                        onClose={() => setShowRules(false)}
-                    />
+                {activeViruses.length > 0 && (
+                    <button className="virus-badge" onClick={() => { playClick(); setShowRules(true); }}>📜 {activeViruses.length}</button>
                 )}
-            </AnimatePresence>
-
-            {showSettings && <SettingsModal onClose={() => { playClick(); setShowSettings(false); }} />}
-
-            <div style={{
-                flex: 1,
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                padding: '0 20px',
-                position: 'relative',
-                width: '100%',
-                overflow: 'hidden'
-            }}>
-                <AnimatePresence mode="wait">
-                    <SwipeCard key={currentCard.instanceId} onSwipe={handleSwipe}>
-                        <Card
-                            type={currentCard.type}
-                            text={currentCard.text}
-                            forbidden={currentCard.forbidden}
-                            translationKey={currentCard.translationKey}
-                            args={currentCard.args}
-                            onClick={choiceCard ? undefined : handleCardTap}
-                            sips={currentCard.points || currentCard.sips}
-                            spiciness={currentCard.spiciness}
-                            onResult={handleCardResult}
-                        />
-                    </SwipeCard>
-                </AnimatePresence>
             </div>
 
-            <div style={{
-                height: 'calc(60px + env(safe-area-inset-bottom))',
-                width: '100%',
-                flexShrink: 0,
-                zIndex: 10
-            }} />
+            <div className="card-area">
+                <SwipeCard key={currentCard.instanceId} onSwipe={handleSwipe}>
+                    <Card
+                        type={currentCard.type}
+                        text={currentCard.text}
+                        forbidden={currentCard.forbidden}
+                        translationKey={currentCard.translationKey}
+                        args={currentCard.args}
+                        onClick={isChoiceCard ? undefined : handleCardTap}
+                        sips={cardPoints}
+                        spiciness={currentCard.spiciness}
+                        onResult={handleCardResult}
+                    />
+                </SwipeCard>
+            </div>
+
+            {showRules && (
+                <ActiveRulesSheet
+                    rules={activeViruses}
+                    getCardText={getCardText}
+                    onEnd={(id) => { playClick(); removeVirus(id); }}
+                    onClose={() => setShowRules(false)}
+                />
+            )}
+            {showSettings && <SettingsModal onClose={() => { playClick(); setShowSettings(false); }} />}
         </div>
     );
 };

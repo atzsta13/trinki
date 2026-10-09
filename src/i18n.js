@@ -1,47 +1,62 @@
-import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
+// Tiny i18n: one flat key → string map per language, English as fallback, {{var}} interpolation.
+// UI strings live in locales/<lang>.json, card translations in locales/challenges/<lang>.json (keyed by card id).
+import { useSyncExternalStore } from 'react';
 
 export const SUPPORTED_LANGUAGES = ['en', 'de', 'es', 'fr', 'it', 'pt', 'nl', 'pl', 'tr', 'sv'];
 
-// Each locale is its own chunk, so only the active language (plus the English fallback) is downloaded and parsed.
-const loaders = {
-    translation: import.meta.glob('./locales/*.json', { import: 'default' }),
-    challenges: import.meta.glob('./locales/challenges/*.json', { import: 'default' })
+// Each locale is its own chunk, so only English + the active language are downloaded.
+const uiFiles = import.meta.glob('./locales/*.json', { import: 'default' });
+const cardFiles = import.meta.glob('./locales/challenges/*.json', { import: 'default' });
+
+const loadLanguage = async (lang) => {
+    const [ui, cards] = await Promise.all([
+        uiFiles[`./locales/${lang}.json`]?.() ?? {},
+        cardFiles[`./locales/challenges/${lang}.json`]?.() ?? {}
+    ]);
+    return { ...cards, ...ui };
 };
 
-const lazyLocaleBackend = {
-    type: 'backend',
-    read(language, namespace, callback) {
-        const path = namespace === 'challenges' ? `./locales/challenges/${language}.json` : `./locales/${language}.json`;
-        const load = loaders[namespace]?.[path];
-        if (!load) {
-            callback(null, {});
-            return;
-        }
-        load().then(data => callback(null, data), error => callback(error, null));
+const makeTranslator = (strings) => (key, vars) => {
+    const template = strings[key] ?? vars?.defaultValue ?? key;
+    return vars ? template.replace(/\{\{(\w+)\}\}/g, (match, name) => vars[name] ?? match) : template;
+};
+
+let english = {};
+let language = 'en';
+// A new function per language, so memoized components re-render when the language changes.
+let translate = makeTranslator({});
+const listeners = new Set();
+
+export const getLanguage = () => language;
+
+export const setLanguage = async (lang) => {
+    const strings = lang === 'en' ? english : { ...english, ...await loadLanguage(lang) };
+    language = lang;
+    translate = makeTranslator(strings);
+    document.documentElement.lang = lang;
+    listeners.forEach(listener => listener());
+};
+
+const detectLanguage = () => {
+    try {
+        const saved = JSON.parse(localStorage.getItem('trinki_settings') || '{}').language;
+        if (SUPPORTED_LANGUAGES.includes(saved)) return saved;
+    } catch {
+        // ignore broken storage
     }
+    const browser = navigator.language?.slice(0, 2);
+    return SUPPORTED_LANGUAGES.includes(browser) ? browser : 'en';
 };
 
-export const i18nReady = i18n
-    .use(lazyLocaleBackend)
-    .use(LanguageDetector)
-    .use(initReactI18next)
-    .init({
-        ns: ['translation', 'challenges'],
-        defaultNS: 'translation',
-        // Some UI strings (Secrets, Dark Tales) live in the challenges namespace.
-        fallbackNS: 'challenges',
-        fallbackLng: 'en',
-        supportedLngs: SUPPORTED_LANGUAGES,
-        nonExplicitSupportedLngs: true,
-        load: 'languageOnly',
-        interpolation: {
-            escapeValue: false
-        },
-        react: {
-            useSuspense: false
-        }
-    });
+export const initI18n = async () => {
+    english = await loadLanguage('en');
+    await setLanguage(detectLanguage());
+};
 
-export default i18n;
+const subscribe = (listener) => {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+};
+
+/** Returns `t(key, vars?)` for the current language and re-renders when it changes. */
+export const useT = () => useSyncExternalStore(subscribe, () => translate);

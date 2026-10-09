@@ -1,7 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useState, useRef } from 'react';
 import { useGame } from '../../logic/GameContext';
+import { useT } from '../../i18n';
 import Button from '../Shared/Button';
+import PassAndReveal from './PassAndReveal';
+
+const pickRandom = (list) => list[Math.floor(Math.random() * list.length)];
 
 const CATEGORIES = [
     { name: "Animals", items: ["Cat", "Dog", "Elephant", "Giraffe", "Raccoon", "Snake", "Lion", "Tiger", "Bear", "Shark", "Whale", "Dolphin", "Bird", "Spider", "Frog", "Turtle", "Monkey", "Cow", "Pig", "Horse"] },
@@ -15,190 +18,94 @@ const CATEGORIES = [
     { name: "Instruments", items: ["Guitar", "Drums", "Violin", "Flute", "Trumpet", "Piano", "Saxophone", "Clarinet", "Harp", "Cello", "Banjo", "Ukulele", "Accordion", "Trombone", "Tuba"] },
 ];
 
+// Everyone draws one line of the secret word; the fake artist doesn't know it and has to bluff.
 const FakeArtistGame = ({ onNext }) => {
     const { players } = useGame();
-    const { t } = useTranslation();
-
-    const [gameState, setGameState] = useState('setup');
-    const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
-    const [fakeIndex, setFakeIndex] = useState(null);
-    const [secretWord, setSecretWord] = useState('');
-    const [categoryName, setCategoryName] = useState('');
-    const [isRevealing, setIsRevealing] = useState(false);
-
+    const t = useT();
+    const [stage, setStage] = useState('setup'); // setup → reveal ⇄ draw → discuss
+    const [playerIndex, setPlayerIndex] = useState(0);
+    const [fakeIndex, setFakeIndex] = useState(0);
+    const [category, setCategory] = useState('');
+    const [word, setWord] = useState('');
     const canvasRef = useRef(null);
-    const [isDrawing, setIsDrawing] = useState(false);
 
-    const startGame = () => {
-        const cat = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
-        setCategoryName(cat.name);
-        setSecretWord(cat.items[Math.floor(Math.random() * cat.items.length)]);
+    const start = () => {
+        const cat = pickRandom(CATEGORIES);
+        setCategory(cat.name);
+        setWord(pickRandom(cat.items));
         setFakeIndex(Math.floor(Math.random() * players.length));
-        setCurrentPlayerIndex(0);
-        setGameState('reveal');
-
-        const canvas = canvasRef.current;
-        if (canvas) {
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-    };
-
-    const handleNext = () => {
-        setIsRevealing(false);
-        setGameState('draw');
+        setPlayerIndex(0);
+        setStage('reveal');
     };
 
     const finishTurn = () => {
-        // One line per player, then the group discusses who the fake was.
-        if (currentPlayerIndex < players.length - 1) {
-            setCurrentPlayerIndex(p => p + 1);
-            setGameState('reveal');
+        if (playerIndex < players.length - 1) {
+            setPlayerIndex(i => i + 1);
+            setStage('reveal');
         } else {
-            setGameState('discuss');
+            setStage('discuss');
         }
     };
 
-    const startDraw = ({ nativeEvent }) => {
-        const { offsetX, offsetY } = getCoordinates(nativeEvent);
-        const ctx = canvasRef.current.getContext('2d');
-        ctx.beginPath();
-        ctx.moveTo(offsetX, offsetY);
-        setIsDrawing(true);
+    const point = (e) => {
+        const rect = canvasRef.current.getBoundingClientRect();
+        return [e.clientX - rect.left, e.clientY - rect.top];
     };
 
-    const draw = ({ nativeEvent }) => {
-        if (!isDrawing) return;
-        const { offsetX, offsetY } = getCoordinates(nativeEvent);
+    const startLine = (e) => {
+        if (stage !== 'draw') return;
+        canvasRef.current.setPointerCapture(e.pointerId);
         const ctx = canvasRef.current.getContext('2d');
-        ctx.lineTo(offsetX, offsetY);
+        Object.assign(ctx, { lineWidth: 3, lineCap: 'round', strokeStyle: '#000' });
+        ctx.beginPath();
+        ctx.moveTo(...point(e));
+    };
+
+    const continueLine = (e) => {
+        if (stage !== 'draw' || !canvasRef.current.hasPointerCapture(e.pointerId)) return;
+        const ctx = canvasRef.current.getContext('2d');
+        ctx.lineTo(...point(e));
         ctx.stroke();
     };
 
-    const stopDraw = () => {
-        const ctx = canvasRef.current.getContext('2d');
-        ctx.closePath();
-        setIsDrawing(false);
-    };
-
-    const getCoordinates = (nativeEvent) => {
-        if (nativeEvent.touches && nativeEvent.touches.length > 0) {
-            const touch = nativeEvent.touches[0];
-            const rect = canvasRef.current.getBoundingClientRect();
-            return {
-                offsetX: touch.clientX - rect.left,
-                offsetY: touch.clientY - rect.top
-            };
-        }
-        return { offsetX: nativeEvent.offsetX, offsetY: nativeEvent.offsetY };
-    };
-
-    useEffect(() => {
-        if (gameState === 'draw' || gameState === 'discuss') {
-            // The canvas stays mounted (hidden via CSS) so the drawing survives between turns.
-            const canvas = canvasRef.current;
-            if (canvas) {
-                const ctx = canvas.getContext('2d');
-                ctx.lineWidth = 3;
-                ctx.lineCap = 'round';
-                ctx.strokeStyle = '#000';
-            }
-        }
-    }, [gameState]);
+    const showCanvas = stage === 'draw' || stage === 'discuss';
 
     return (
-        <div className="full-screen" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px' }}>
+        <div className="full">
+            <Button variant="secondary" className="btn-small corner" onClick={onNext}>{t('skip_card')} ⏭</Button>
 
-            {/* Header */}
-            <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', padding: '10px', alignItems: 'center' }}>
-                <span style={{ fontWeight: 'bold' }}>🎨 Fake Artist</span>
-                {gameState !== 'setup' && <span>Player: {players[currentPlayerIndex]?.name}</span>}
-                <Button onClick={onNext} variant="secondary" style={{ padding: '5px 15px', minHeight: 'auto', fontSize: '0.8rem' }}>{t('skip_card')} ⏭</Button>
-            </div>
-
-            {gameState === 'setup' && (
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-                    <h1>🎨</h1>
-                    <h2>{t('mode_fake_artist')}</h2>
-                    <p style={{ textAlign: 'center', opacity: 0.8, maxWidth: '300px' }}>
-                        {t('fake_intro')}
-                    </p>
-                    {players.length < 3 ? <p style={{ color: '#ff5555' }}>{t('need_3_players')}</p> :
-                        <Button onClick={startGame} className="btn-liquid" style={{ marginTop: '20px' }}>{t('start_game')}</Button>
-                    }
+            {stage === 'setup' && (
+                <div className="screen">
+                    <h1>🎨 {t('mode_fake_artist')}</h1>
+                    <p className="muted">{t('fake_intro')}</p>
+                    {players.length < 3 ? <p className="bad">{t('need_3_players')}</p> : <Button onClick={start}>{t('start_game')}</Button>}
                 </div>
             )}
 
-            {gameState === 'reveal' && (
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-                    <h2>{t('spy_pass_to')} {players[currentPlayerIndex].name}</h2>
-                    <button
-                        onMouseDown={() => setIsRevealing(true)}
-                        onMouseUp={() => setIsRevealing(false)}
-                        onTouchStart={() => setIsRevealing(true)}
-                        onTouchEnd={() => setIsRevealing(false)}
-                        style={{
-                            width: '200px', height: '200px', borderRadius: '50%',
-                            background: isRevealing ? (currentPlayerIndex === fakeIndex ? '#ff0055' : '#00ffff') : '#333',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            marginTop: '20px', border: 'none', color: '#fff'
-                        }}
-                    >
-                        {isRevealing ? (
-                            <div style={{ textAlign: 'center' }}>
-                                <div style={{ fontSize: '0.8rem' }}>{t('category')}: {categoryName}</div>
-                                <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-                                    {currentPlayerIndex === fakeIndex ? t('fake_you_are_fake') : secretWord}
-                                </div>
-                            </div>
-                        ) : t('fake_hold_to_see')}
-                    </button>
-                    {isRevealing && (
-                        <Button onClick={handleNext} style={{ marginTop: '30px' }}>I Know It (Go Draw)</Button>
-                    )}
-                </div>
-            )}
-
-            {/* Canvas is always rendered and toggled via display so the drawing persists. */}
-            <div style={{
-                display: (gameState === 'draw' || gameState === 'discuss') ? 'flex' : 'none',
-                flexDirection: 'column', alignItems: 'center', flex: 1, width: '100%'
-            }}>
-                <h3 style={{ margin: '10px' }}>{gameState === 'draw' ? t('fake_draw_one') : t('final_stats')}</h3>
-                <canvas
-                    ref={canvasRef}
-                    width={320}
-                    height={350}
-                    style={{ background: '#fff', borderRadius: '10px', touchAction: 'none' }}
-                    onMouseDown={startDraw}
-                    onMouseMove={draw}
-                    onMouseUp={stopDraw}
-                    onMouseLeave={stopDraw}
-                    onTouchStart={startDraw}
-                    onTouchMove={draw}
-                    onTouchEnd={stopDraw}
+            {stage === 'reveal' && (
+                <PassAndReveal
+                    key={playerIndex}
+                    playerName={players[playerIndex].name}
+                    secret={<>{t('category')}: {category}<br /><strong>{playerIndex === fakeIndex ? t('fake_you_are_fake') : word}</strong></>}
+                    isImpostor={playerIndex === fakeIndex}
+                    doneLabel="I Know It (Go Draw)"
+                    onDone={() => setStage('draw')}
                 />
-
-                {gameState === 'draw' && (
-                    <Button onClick={finishTurn} className="btn-liquid" style={{ marginTop: '20px' }}>Done Drawing</Button>
-                )}
-
-                {gameState === 'discuss' && (
-                    <div style={{ marginTop: '10px', textAlign: 'center' }}>
-                        <p>The Word was: <b>{secretWord}</b></p>
-                        <p>The Fake was: <b style={{ color: '#ff0055' }}>{players[fakeIndex].name}</b></p>
-                        <Button onClick={onNext} variant="primary">{t('next_card')} ➡️</Button>
-                    </div>
-                )}
-            </div>
-
-            {gameState === 'draw' && (
-                <div style={{ position: 'fixed', bottom: 10, left: 10, opacity: 0.5, fontSize: '0.8rem', pointerEvents: 'none' }}>
-                    {t('fake_tip_no_lift')}
-                </div>
             )}
 
+            {/* The canvas stays mounted (only hidden) so the drawing survives between turns. */}
+            <div className="screen" hidden={!showCanvas}>
+                <h3>{stage === 'draw' ? `${players[playerIndex]?.name}: ${t('fake_draw_one')}` : t('final_stats')}</h3>
+                <canvas ref={canvasRef} width={320} height={350} className="drawing" onPointerDown={startLine} onPointerMove={continueLine} />
+                {stage === 'draw' && <><Button onClick={finishTurn}>Done Drawing</Button><p className="muted small">{t('fake_tip_no_lift')}</p></>}
+                {stage === 'discuss' && (
+                    <>
+                        <p>The Word was: <b>{word}</b></p>
+                        <p>The Fake was: <b className="bad">{players[fakeIndex].name}</b></p>
+                        <Button onClick={onNext}>{t('next_card')} ➡️</Button>
+                    </>
+                )}
+            </div>
         </div>
     );
 };

@@ -62,7 +62,6 @@
   "n_fakeorfact": "Fake or Fact",
   "spy_find_liar": "Find the imposter among us.",
   "spy_pass_to": "Pass to:",
-  "spy_hold_to_reveal": "HOLD TO REVEAL",
   "spy_you_are_spy": "YOU ARE THE SPY 🕵️",
   "spy_discuss": "Discuss! Who is acting suspicious?",
   "spy_who_is_spy": "Who is the Spy?",
@@ -72,7 +71,6 @@
   "spy_the_spy_was": "The Spy was:",
   "spy_the_word_was": "The Word was:",
   "fake_intro": "Everyone draws one line. The Fake Artist doesn't know the word but must fake it. Catch them!",
-  "fake_hold_to_see": "HOLD TO SEE WORD",
   "fake_you_are_fake": "YOU ARE THE FAKE",
   "fake_draw_one": "Draw ONE Stroke line!",
   "fake_tip_no_lift": "Tip: Don't lift your finger!",
@@ -99,5 +97,6 @@
   "end_rule": "End",
   "random_name_reset": "No more random names! Reset the list?",
   "desc_social": "Adds themed content (filtered by spiciness).",
-  "desc_seasonal": "Adds holiday-themed cards."
+  "desc_seasonal": "Adds holiday-themed cards.",
+  "tap_to_reveal": "TAP TO REVEAL"
 }

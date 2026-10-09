@@ -2,7 +2,7 @@ import { createContext, useState, useContext, useEffect } from 'react';
 import { getDeck } from './deck';
 import { setSoundEnabled } from './sound';
 import { setHapticsEnabled } from './haptics';
-import i18n from '../i18n';
+import { getLanguage, setLanguage as applyLanguage } from '../i18n';
 
 const STORAGE_KEYS = {
   players: 'trinki_players',
@@ -46,8 +46,8 @@ export const GameProvider = ({ children }) => {
     spicyLevel: 3,
     soundEnabled: true,
     hapticsEnabled: true,
-    language: i18n.language || 'en',
-    ...loadJSON(STORAGE_KEYS.settings, {})
+    ...loadJSON(STORAGE_KEYS.settings, {}),
+    language: getLanguage()
   }));
   const [playedCards, setPlayedCards] = useState(() => loadJSON(STORAGE_KEYS.playedCards, []));
   const [customCards, setCustomCards] = useState(() => loadJSON(STORAGE_KEYS.customCards, []));
@@ -103,7 +103,7 @@ export const GameProvider = ({ children }) => {
   const toggleHaptics = () => setSettings(prev => ({ ...prev, hapticsEnabled: !prev.hapticsEnabled }));
 
   const setLanguage = (lang) => {
-    i18n.changeLanguage(lang);
+    applyLanguage(lang);
     setSettings(prev => ({ ...prev, language: lang }));
   };
 

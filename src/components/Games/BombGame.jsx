@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
 import Button from '../Shared/Button';
 import { triggerHaptic, HapticType } from '../../logic/haptics';
 import { playError } from '../../logic/sound';
@@ -108,83 +107,39 @@ const BombGame = ({ card, onNext }) => {
         return () => clearInterval(interval);
     }, [gameState, deadline]);
 
-    const timerColor = secondsLeft > 10 ? '#fff' : secondsLeft > 5 ? '#ffd700' : '#ff0055';
-    const pulseDuration = secondsLeft > 10 ? 1 : secondsLeft > 5 ? 0.5 : 0.25;
+    // Speeds up as time runs out: calm → hurry → panic.
+    const urgency = secondsLeft > 10 ? 'calm' : secondsLeft > 5 ? 'hurry' : 'panic';
 
-    const renderContent = () => {
-        if (gameState === 'setup') {
-            return (
-                <div style={{ textAlign: 'center' }}>
-                    <h2>{MODE_INFO[mode].title}</h2>
-                    <p style={{ opacity: 0.7, marginBottom: '20px' }}>{MODE_INFO[mode].description}</p>
-                    <Button onClick={startRound} className="btn-liquid">Light Fuse</Button>
-                    <div style={{ marginTop: '30px' }}>
-                        <Button onClick={onNext} variant="secondary">Skip</Button>
-                    </div>
-                </div>
-            );
-        }
-
-        if (gameState === 'tick') {
-            return (
-                <div style={{ textAlign: 'center', width: '100%', position: 'relative' }}>
-                    <motion.div
-                        animate={{ opacity: [0, 0.2, 0], scale: [1, 1.2, 1] }}
-                        transition={{ repeat: Infinity, duration: pulseDuration, ease: 'easeInOut' }}
-                        style={{
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            x: '-50%',
-                            y: '-50%',
-                            width: '300px',
-                            height: '300px',
-                            background: `radial-gradient(circle, ${timerColor} 0%, transparent 70%)`,
-                            pointerEvents: 'none',
-                            zIndex: 0
-                        }}
-                    />
-
-                    <div style={{ position: 'relative', zIndex: 1 }}>
-                        <div style={{ fontSize: '1.5rem', opacity: 0.8, marginBottom: '10px' }}>{mode === 'alphabet' ? `Category: ${prompt}` : 'Topic:'}</div>
-
-                        <h1 style={{ fontSize: '2.5rem', lineHeight: 1.2, margin: '10px 0' }}>
-                            {mode === 'alphabet' ? `Letter: ${letter}` : prompt}
-                        </h1>
-
-                        <motion.div
-                            animate={{ scale: [1, 1.2, 1], rotate: [0, 5, -5, 0] }}
-                            transition={{ repeat: Infinity, duration: pulseDuration }}
-                            style={{ fontSize: '5rem', margin: '20px 0', fontWeight: 'bold', color: timerColor, textShadow: `0 0 20px ${timerColor}` }}
-                        >
-                            {/* Classic hides the timer so nobody knows when it blows. */}
-                            {mode === 'classic' ? '💣' : secondsLeft}
-                        </motion.div>
-
-                        {mode !== 'classic' && (
-                            <Button onClick={nextRound} className="btn-liquid" style={{ background: '#00ff00', color: '#000', boxShadow: '0 10px 20px rgba(0,255,0,0.3)' }}>
-                                {mode === 'alphabet' ? 'Next Letter (Reset)' : 'Success (Pass)'}
-                            </Button>
-                        )}
-                    </div>
-                </div>
-            );
-        }
-
+    if (gameState === 'setup') {
         return (
-            <div style={{ textAlign: 'center' }}>
-                <h1 style={{ fontSize: '5rem' }}>💥 BOOM 💥</h1>
-                <p>You Lose!</p>
-                <Button onClick={onNext} variant="primary" className="btn-liquid">Next Card ➡️</Button>
+            <div className="screen bomb">
+                <h2>{MODE_INFO[mode].title}</h2>
+                <p className="muted">{MODE_INFO[mode].description}</p>
+                <Button onClick={startRound}>Light Fuse</Button>
+                <Button variant="secondary" onClick={onNext}>Skip</Button>
             </div>
         );
-    };
+    }
 
-    const backgroundColor = gameState === 'boom' ? '#4a0000' : (gameState === 'tick' && secondsLeft <= 5 ? '#3a2a00' : '#1a1a1a');
+    if (gameState === 'boom') {
+        return (
+            <div className="screen bomb boom">
+                <h1 className="huge">💥 BOOM 💥</h1>
+                <p>You Lose!</p>
+                <Button onClick={onNext}>Next Card ➡️</Button>
+            </div>
+        );
+    }
 
     return (
-        <div className="full-screen" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', backgroundColor }}>
-            {renderContent()}
+        <div className={`screen bomb ${urgency}`}>
+            <p className="muted big">{mode === 'alphabet' ? `Category: ${prompt}` : 'Topic:'}</p>
+            <h1>{mode === 'alphabet' ? `Letter: ${letter}` : prompt}</h1>
+            {/* Classic hides the timer so nobody knows when it blows. */}
+            <div className="bomb-timer">{mode === 'classic' ? '💣' : secondsLeft}</div>
+            {mode !== 'classic' && (
+                <Button className="btn-go" onClick={nextRound}>{mode === 'alphabet' ? 'Next Letter (Reset)' : 'Success (Pass)'}</Button>
+            )}
         </div>
     );
 };

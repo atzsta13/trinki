@@ -4,11 +4,11 @@ import { createRoot } from 'react-dom/client'
 import '@fontsource-variable/inter/wght.css'
 import '@fontsource-variable/outfit/wght.css'
 import './index.css'
-import { i18nReady } from './i18n'
+import { initI18n } from './i18n'
 import App from './App'
 
 // Render once the active language is loaded so there's no flash of raw keys.
-await i18nReady
+await initI18n()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
