@@ -1,6 +1,5 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { motion, AnimatePresence, useAnimation, useMotionValue, useTransform } from 'framer-motion';
-import { useDrag } from '@use-gesture/react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { motion, AnimatePresence, useAnimationControls, useMotionValue, useTransform } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { useGame } from '../../logic/GameContext';
 import Card from '../Shared/Card';
@@ -25,7 +24,7 @@ const TTS_LOCALES = {
 };
 
 const SWIPE_THRESHOLD = 100;
-const SWIPE_VELOCITY = 0.4;
+const SWIPE_VELOCITY = 500; // px/s
 const CHOICE_PATTERN = /(or drink|or penalty|or finish|if you refuse|if yes, drink|if yes penalty|if yes take)/i;
 
 const roundButtonStyle = {
@@ -34,7 +33,6 @@ const roundButtonStyle = {
     fontSize: '1.4rem',
     borderRadius: '50%',
     background: 'rgba(255,255,255,0.1)',
-    backdropFilter: 'blur(10px)',
     boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
 };
 
@@ -130,8 +128,7 @@ const ActiveRulesSheet = ({ rules, getCardText, onEnd, onClose }) => {
             style={{
                 position: 'absolute',
                 top: 0, left: 0, width: '100%', height: '100%',
-                background: 'rgba(0,0,0,0.6)',
-                backdropFilter: 'blur(10px)',
+                background: 'rgba(0,0,0,0.8)',
                 zIndex: 300,
                 display: 'flex',
                 flexDirection: 'column',
@@ -195,6 +192,85 @@ const ActiveRulesSheet = ({ rules, getCardText, onEnd, onClose }) => {
     );
 };
 
+// One instance per card (keyed by the parent), so every card starts with fresh motion values.
+// Swiping right/left flies the card out and then reports the direction.
+const SwipeCard = ({ onSwipe, children }) => {
+    const x = useMotionValue(0);
+    const rotate = useTransform(x, [-200, 200], [-25, 25]);
+    const controls = useAnimationControls();
+    // A drag ends with a click on the card; this keeps it from also counting as a tap.
+    const draggedRef = useRef(false);
+    const swipedRef = useRef(false);
+
+    useEffect(() => {
+        controls.start({ scale: 1, opacity: 1, y: 0 });
+    }, [controls]);
+
+    const flyOut = (direction) => {
+        if (swipedRef.current) return;
+        swipedRef.current = true;
+        triggerHaptic(HapticType.HEAVY);
+        controls.start({
+            x: 600 * direction,
+            opacity: 0,
+            scale: 0.8,
+            rotate: 20 * direction,
+            transition: { duration: 0.2, ease: 'easeIn' }
+        }).then(() => onSwipe(direction));
+    };
+
+    const handleDrag = (_, { offset }) => {
+        const prev = x.getPrevious() ?? 0;
+        // Single distinct tick when crossing the dismissal threshold.
+        if (Math.abs(offset.x) >= SWIPE_THRESHOLD && Math.abs(prev) < SWIPE_THRESHOLD) {
+            triggerHaptic(HapticType.MEDIUM);
+        }
+    };
+
+    const handleDragEnd = (_, { offset, velocity }) => {
+        if (offset.x > SWIPE_THRESHOLD || velocity.x > SWIPE_VELOCITY) {
+            flyOut(1);
+        } else if (offset.x < -SWIPE_THRESHOLD || velocity.x < -SWIPE_VELOCITY) {
+            flyOut(-1);
+        } else {
+            // High-stiffness spring for a "snap back" feel
+            controls.start({
+                x: 0, rotate: 0,
+                transition: { type: 'spring', stiffness: 800, damping: 35 }
+            });
+        }
+    };
+
+    return (
+        <motion.div
+            drag="x"
+            dragMomentum={false}
+            dragElastic={0.9}
+            onPointerDown={() => { draggedRef.current = false; }}
+            onDragStart={() => { draggedRef.current = true; }}
+            onDrag={handleDrag}
+            onDragEnd={handleDragEnd}
+            onClickCapture={(e) => { if (draggedRef.current || swipedRef.current) e.stopPropagation(); }}
+            animate={controls}
+            initial={{ scale: 0.8, opacity: 0, y: 50 }}
+            exit={{ scale: 0.8, opacity: 0, y: -50, transition: { duration: 0.15 } }}
+            style={{
+                x,
+                rotate,
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                cursor: 'grab',
+                touchAction: 'pan-y'
+            }}
+        >
+            {children}
+        </motion.div>
+    );
+};
+
 const GameScreen = () => {
     const {
         currentCard,
@@ -212,14 +288,11 @@ const GameScreen = () => {
     } = useGame();
 
     const { t } = useTranslation();
-    const controls = useAnimation();
     const [showSettings, setShowSettings] = useState(false);
     const [showRules, setShowRules] = useState(false);
     const [streakNotification, setStreakNotification] = useState(null);
     const [ttsEnabled, setTtsEnabled] = useState(false);
 
-    const x = useMotionValue(0);
-    const rotate = useTransform(x, [-200, 200], [-25, 25]);
 
     const getCardText = (card) => {
         if (!card) return '';
@@ -229,18 +302,17 @@ const GameScreen = () => {
         return card.text || '';
     };
 
+    const currentText = getCardText(currentCard);
+
     useEffect(() => {
         if (!('speechSynthesis' in window)) return;
         window.speechSynthesis.cancel();
-        if (!ttsEnabled || !currentCard) return;
+        if (!ttsEnabled || !currentText) return;
 
-        const text = getCardText(currentCard);
-        if (text) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = TTS_LOCALES[settings.language] || 'en-US';
-            window.speechSynthesis.speak(utterance);
-        }
-    }, [currentCard, ttsEnabled, settings.language]);
+        const utterance = new SpeechSynthesisUtterance(currentText);
+        utterance.lang = TTS_LOCALES[settings.language] || 'en-US';
+        window.speechSynthesis.speak(utterance);
+    }, [currentText, ttsEnabled, settings.language]);
 
     const handleCardResult = (success) => {
         if (!currentCard?.targetPlayerId) return;
@@ -267,12 +339,12 @@ const GameScreen = () => {
     const isChoiceCard = () => {
         if (!currentCard) return false;
         if (currentCard.type === 'truth' || currentCard.type === 'dare') return true;
-        return CHOICE_PATTERN.test(getCardText(currentCard));
+        return CHOICE_PATTERN.test(currentText);
     };
 
     const getPenaltyAmount = () => {
         if (currentCard.points || currentCard.sips) return currentCard.points || currentCard.sips;
-        const text = getCardText(currentCard).toLowerCase();
+        const text = currentText.toLowerCase();
         const match = text.match(/(?:drink|penalty|points|take|lose) (\d+)/i);
         if (match) return parseInt(match[1], 10);
         if (text.includes('finish your drink')) return 5;
@@ -293,61 +365,21 @@ const GameScreen = () => {
         nextCard();
     };
 
-    const flyOut = (direction) => {
-        triggerHaptic(HapticType.HEAVY);
-        const choice = isChoiceCard();
-        controls.start({
-            x: 600 * direction,
-            opacity: 0,
-            scale: 0.8,
-            rotate: 20 * direction,
-            transition: { duration: 0.2, ease: 'easeIn' }
-        }).then(() => {
-            if (choice) {
-                handleChoice(direction < 0);
-            } else {
-                playPop();
-                if (direction < 0 && Math.random() > 0.7) triggerEmojiBurst(['💀', '📉', '🥀', '🤏']);
-                nextCard();
-            }
-            controls.set({ x: 0, opacity: 1, rotate: 0, scale: 1 });
-            x.set(0);
-        });
-    };
-
-    const bind = useDrag(({ active, movement: [mx], velocity: [vx], direction: [xDir] }) => {
-        if (active) {
-            const prevMx = x.get();
-            x.set(mx);
-
-            // Textural feedback: a faint click every 10px, a distinct tick at the dismissal threshold.
-            if (Math.floor(Math.abs(mx) / 10) !== Math.floor(Math.abs(prevMx) / 10)) {
-                triggerHaptic(HapticType.SELECTION);
-            }
-            if (Math.abs(mx) >= SWIPE_THRESHOLD && Math.abs(prevMx) < SWIPE_THRESHOLD) {
-                triggerHaptic(HapticType.MEDIUM);
-            }
+    const handleSwipe = (direction) => {
+        if (isChoiceCard()) {
+            handleChoice(direction < 0);
             return;
         }
+        playPop();
+        if (direction < 0 && Math.random() > 0.7) triggerEmojiBurst(['💀', '📉', '🥀', '🤏']);
+        nextCard();
+    };
 
-        if (mx > SWIPE_THRESHOLD || (vx > SWIPE_VELOCITY && xDir > 0)) {
-            flyOut(1);
-        } else if (mx < -SWIPE_THRESHOLD || (vx > SWIPE_VELOCITY && xDir < 0)) {
-            flyOut(-1);
-        } else {
-            // High-stiffness spring for a "snap back" feel
-            controls.start({
-                x: 0, opacity: 1, rotate: 0, scale: 1,
-                transition: { type: 'spring', stiffness: 800, damping: 35 }
-            });
-        }
-    }, {
-        from: () => [x.get(), 0],
-        filterTaps: true,
-        rubberband: true,
-        axis: 'lock',
-        pointer: { touch: true }
-    });
+    const handleCardTap = () => {
+        playPop();
+        triggerHaptic(HapticType.MEDIUM);
+        nextCard();
+    };
 
     if (gameState === 'finished') {
         return (
@@ -479,37 +511,19 @@ const GameScreen = () => {
                 overflow: 'hidden'
             }}>
                 <AnimatePresence mode="wait">
-                    <motion.div
-                        {...bind()}
-                        key={currentCard.instanceId}
-                        animate={controls}
-                        initial={{ scale: 0.8, opacity: 0, y: 50, x: 0 }}
-                        exit={{ scale: 0.8, opacity: 0, y: -50, transition: { duration: 0.15 } }}
-                        whileInView={{ scale: 1, opacity: 1, y: 0 }}
-                        style={{
-                            x,
-                            rotate,
-                            width: '100%',
-                            height: '100%',
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            cursor: 'grab',
-                            touchAction: 'pan-y'
-                        }}
-                    >
+                    <SwipeCard key={currentCard.instanceId} onSwipe={handleSwipe}>
                         <Card
                             type={currentCard.type}
                             text={currentCard.text}
                             forbidden={currentCard.forbidden}
                             translationKey={currentCard.translationKey}
                             args={currentCard.args}
-                            onClick={choiceCard ? undefined : () => { playPop(); triggerHaptic(HapticType.MEDIUM); nextCard(); }}
+                            onClick={choiceCard ? undefined : handleCardTap}
                             sips={currentCard.points || currentCard.sips}
                             spiciness={currentCard.spiciness}
                             onResult={handleCardResult}
                         />
-                    </motion.div>
+                    </SwipeCard>
                 </AnimatePresence>
             </div>
 

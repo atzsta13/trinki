@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useGame } from '../../logic/GameContext';
 import { useTranslation } from 'react-i18next';
 import Button from '../Shared/Button';
@@ -65,6 +65,7 @@ const DarkTalesGame = ({ card, onNext }) => {
                 <Button onClick={handleStart} variant="primary" style={{ background: '#ff4444', borderColor: '#ff0000' }}>
                     {t('start_button')}
                 </Button>
+                <Button onClick={onNext} variant="secondary">{t('skip_card')}</Button>
             </div>
         );
     }

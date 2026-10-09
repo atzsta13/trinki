@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { useState } from 'react';
+import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { GameProvider, useGame } from './logic/GameContext';
 import SetupScreen from './components/Screens/SetupScreen';
 import GameScreen from './components/Screens/GameScreen';
@@ -75,9 +75,12 @@ const AppContent = () => {
 
 function App() {
   return (
-    <GameProvider>
-      <AppContent />
-    </GameProvider>
+    // Honour the system "reduce motion" setting (also a cheap win on slow devices).
+    <MotionConfig reducedMotion="user">
+      <GameProvider>
+        <AppContent />
+      </GameProvider>
+    </MotionConfig>
   );
 }
 

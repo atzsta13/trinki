@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useGame } from '../../logic/GameContext';
 import Button from '../Shared/Button';
 import { triggerHaptic, HapticType } from '../../logic/haptics';

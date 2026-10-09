@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Button from '../Shared/Button';
 import { playSuccess, playError, playPop } from '../../logic/sound';
 import { triggerHaptic, HapticType } from '../../logic/haptics';
@@ -56,16 +56,18 @@ const CharadesGame = ({ onNext }) => {
 
     useEffect(() => {
         if (gameState !== 'playing') return;
-        const interval = setInterval(() => setTimeLeft(t => Math.max(t - 1, 0)), 1000);
+        const endsAt = Date.now() + ROUND_SECONDS * 1000;
+        const interval = setInterval(() => {
+            const left = Math.max(Math.ceil((endsAt - Date.now()) / 1000), 0);
+            setTimeLeft(left);
+            if (left === 0) {
+                clearInterval(interval);
+                setGameState('finished');
+                playPop();
+            }
+        }, 250);
         return () => clearInterval(interval);
     }, [gameState]);
-
-    useEffect(() => {
-        if (gameState === 'playing' && timeLeft === 0) {
-            setGameState('finished');
-            playPop();
-        }
-    }, [gameState, timeLeft]);
 
     return (
         <div className="full-screen" style={{

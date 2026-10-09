@@ -1,7 +1,8 @@
 // All sounds are synthesized with the Web Audio API – no audio files needed.
 
 const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-const audioCtx = AudioContextClass ? new AudioContextClass() : null;
+// Created on the first sound (always after a user gesture) so startup doesn't spin up the audio thread.
+let audioCtx = null;
 let soundEnabled = true;
 
 export const setSoundEnabled = (enabled) => {
@@ -10,7 +11,8 @@ export const setSoundEnabled = (enabled) => {
 
 // Returns the audio context if a sound may play right now, otherwise null.
 const getContext = () => {
-    if (!soundEnabled || !audioCtx) return null;
+    if (!soundEnabled || !AudioContextClass) return null;
+    audioCtx ??= new AudioContextClass({ latencyHint: 'interactive' });
     if (audioCtx.state === 'suspended') audioCtx.resume();
     return audioCtx;
 };

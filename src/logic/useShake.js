@@ -1,12 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent } from 'react';
 
-export const useShake = (threshold = 15, onShake) => {
-    // Keep the latest callback in a ref so the listener isn't re-attached on every render.
-    const onShakeRef = useRef(onShake);
-    onShakeRef.current = onShake;
+// Only listens while `enabled`, so cards without a shake mechanic don't process 60 motion events per second.
+export const useShake = (threshold = 15, onShake, enabled = true) => {
+    // Always calls the latest callback without re-attaching the motion listener.
+    const handleShake = useEffectEvent(onShake);
 
     useEffect(() => {
-        if (typeof window === 'undefined' || !window.DeviceMotionEvent) return;
+        if (!enabled || typeof window === 'undefined' || !window.DeviceMotionEvent) return;
 
         let lastX = 0;
         let lastY = 0;
@@ -23,7 +23,7 @@ export const useShake = (threshold = 15, onShake) => {
             lastTime = now;
 
             const speed = Math.abs(current.x + current.y + current.z - lastX - lastY - lastZ) / diffTime * 10000;
-            if (speed > threshold) onShakeRef.current();
+            if (speed > threshold) handleShake();
 
             lastX = current.x;
             lastY = current.y;
@@ -32,5 +32,5 @@ export const useShake = (threshold = 15, onShake) => {
 
         window.addEventListener('devicemotion', handleMotion);
         return () => window.removeEventListener('devicemotion', handleMotion);
-    }, [threshold]);
+    }, [threshold, enabled]);
 };
