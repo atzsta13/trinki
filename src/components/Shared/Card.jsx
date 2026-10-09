@@ -6,12 +6,10 @@ import { playTick, playSuccess, playError, playClick, playPop } from '../../logi
 import { triggerConfetti } from '../../logic/confetti';
 import { getRoast } from '../../logic/roasts';
 
-const TYPE_LABELS = {
-    wouldYouRather: '🤔 Would you rather',
-    neverHaveIEver: '✋ Never have I ever',
-    reflex: '⚡ Reflex test',
-    precision: '⏱️ Precision',
-    shake: '🎲 Shake it'
+// Translated title per card type (keys `type_<type>` in locales/<lang>.json).
+const TYPE_EMOJI = {
+    statement: '📢', standard: '🎯', virus: '🦠', vote: '👉', charade: '🎭', neverHaveIEver: '✋', wouldYouRather: '🤔',
+    taboo: '🤐', paranoia: '🤫', truth: '😇', dare: '😈', reflex: '⚡', precision: '⏱️', shake: '🎲', custom: '✍️'
 };
 
 const PRECISION_TARGET = 5.0;
@@ -29,7 +27,7 @@ const textSizeClass = (text) => (text.length < 30 ? 'text-xl' : text.length < 60
 
 const succeed = () => { playSuccess(); triggerConfetti(); };
 
-const Card = ({ type, text, forbidden, spiciness, translationKey, args, onClick, sips, onResult }) => {
+const Card = ({ type, text, forbidden, spiciness, translationKey, args, onClick, sips, onResult, isChoice }) => {
     const t = useT();
     const content = t(translationKey, { ...args, defaultValue: text });
 
@@ -173,7 +171,7 @@ const Card = ({ type, text, forbidden, spiciness, translationKey, args, onClick,
                 return (
                     <div className="stack full-width">
                         <div className="option">{a}</div>
-                        {b && <><strong className="muted">OR</strong><div className="option">{b}</div></>}
+                        {b && <><strong className="muted">{t('word_or')}</strong><div className="option">{b}</div></>}
                     </div>
                 );
             }
@@ -181,9 +179,9 @@ const Card = ({ type, text, forbidden, spiciness, translationKey, args, onClick,
                 return (
                     <div className="stack">
                         <p>{content}</p>
-                        {step === 'waiting' && <div className="big muted">Wait for it...</div>}
-                        {step === 'ready' && <div className="huge good">TAP!</div>}
-                        {step === 'early' && <div className="big bad">TOO EARLY!</div>}
+                        {step === 'waiting' && <div className="big muted">{t('reflex_wait')}</div>}
+                        {step === 'ready' && <div className="huge good">{t('reflex_tap')}</div>}
+                        {step === 'early' && <div className="big bad">{t('reflex_early')}</div>}
                         {step === 'done' && <div className={`huge ${value > REFLEX_LIMIT_MS ? 'bad' : 'good'}`}>{value}ms</div>}
                     </div>
                 );
@@ -191,9 +189,9 @@ const Card = ({ type, text, forbidden, spiciness, translationKey, args, onClick,
                 return (
                     <div className="stack">
                         <p>{content}</p>
-                        {step === 'rolling' && <div className="big">🎲 Rolling...</div>}
+                        {step === 'rolling' && <div className="big">🎲 {t('dice_rolling')}</div>}
                         {step === 'done' && <div className="huge cyan">{value}</div>}
-                        {step === 'idle' && <><div className="big">📱👋</div><p className="muted small">(or tap to roll)</p></>}
+                        {step === 'idle' && <><div className="big">📱👋</div><p className="muted small">{t('dice_tap')}</p></>}
                     </div>
                 );
             case 'precision': {
@@ -202,42 +200,40 @@ const Card = ({ type, text, forbidden, spiciness, translationKey, args, onClick,
                     <div className="stack">
                         <p>{content}</p>
                         <div className="huge mono good">{value.toFixed(2)}s</div>
-                        {step === 'idle' && <div className="big muted">Tap to Start</div>}
-                        {step === 'running' && <div className="big">Tap to Stop!</div>}
-                        {step === 'done' && <div className={`big ${success ? 'good' : 'bad'}`}>{success ? 'SAFE! 🎉' : 'DRINK! 🍺'}</div>}
+                        {step === 'idle' && <div className="big muted">{t('precision_start')}</div>}
+                        {step === 'running' && <div className="big">{t('precision_stop')}</div>}
+                        {step === 'done' && <div className={`big ${success ? 'good' : 'bad'}`}>{success ? t('result_safe') : t('result_drink')}</div>}
                     </div>
                 );
             }
             case 'taboo':
                 return (
                     <div className="stack">
-                        <p className="muted small upper">Describe</p>
+                        <p className="muted small upper">{t('taboo_describe')}</p>
                         <div className="huge accent">{content}</div>
-                        {forbidden?.length > 0 && (
-                            <>
-                                <strong className="bad small upper">Don&apos;t say</strong>
-                                {forbidden.map(word => <div key={word} className="big">{word}</div>)}
-                            </>
-                        )}
+                        <strong className="bad small upper">{t('taboo_dont_say')}</strong>
+                        {t(`${translationKey}_forbidden`, { defaultValue: forbidden.join(', ') }).split(/,\s*/).map(word => (
+                            <div key={word} className="big">{word}</div>
+                        ))}
                     </div>
                 );
             case 'paranoia':
                 if (step === 'idle') {
                     return (
                         <div className="stack">
-                            <p className="muted small upper">Whisper to Player on Right</p>
+                            <p className="muted small upper">{t('paranoia_whisper')}</p>
                             <div className="card-text text-md">{content}</div>
-                            <strong>They must answer out loud!</strong>
-                            <div className="option">🪙<br />Tap card to flip coin</div>
+                            <strong>{t('paranoia_answer')}</strong>
+                            <div className="option">🪙<br />{t('paranoia_flip')}</div>
                         </div>
                     );
                 }
-                if (step === 'flipping') return <div className="stack"><p>Flipping...</p><div className="huge spin">🪙</div></div>;
+                if (step === 'flipping') return <div className="stack"><p>{t('paranoia_flipping')}</p><div className="huge spin">🪙</div></div>;
                 return (
                     <div className="stack">
                         <div className="huge">{coin === 'heads' ? '🗣️' : '🤐'}</div>
-                        <h2 className={coin === 'heads' ? 'good' : 'yellow'}>{coin === 'heads' ? 'REVEAL!' : 'SECRET SAFE!'}</h2>
-                        {coin === 'heads' && <p className="muted">Read the question out loud!</p>}
+                        <h2 className={coin === 'heads' ? 'good' : 'yellow'}>{coin === 'heads' ? t('paranoia_reveal') : t('paranoia_safe')}</h2>
+                        {coin === 'heads' && <p className="muted">{t('paranoia_read')}</p>}
                     </div>
                 );
             case 'vote':
@@ -273,11 +269,12 @@ const Card = ({ type, text, forbidden, spiciness, translationKey, args, onClick,
                 ))}
             </div>
 
-            <div className="card-title">{TYPE_LABELS[type] || type}</div>
+            <div className="card-title">{TYPE_EMOJI[type]} {t(`type_${type}`)}</div>
             {renderBody()}
 
-            {roast && type !== 'virus' && <div className="roast">🦝 <em>&quot;{roast}&quot;</em></div>}
+            {roast && type !== 'virus' && <div className="roast">🐧 <em>&quot;{roast}&quot;</em></div>}
             {sips > 0 && <div className="card-badge">⚡ {sips} {sips === 1 ? t('penalty') : t('penalties')}</div>}
+            {isChoice && <p className="muted small swipe-hint">{t('swipe_hint')}</p>}
         </div>
     );
 };

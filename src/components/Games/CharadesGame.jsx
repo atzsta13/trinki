@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useT } from '../../i18n';
 import Button from '../Shared/Button';
 import { playSuccess, playError, playPop } from '../../logic/sound';
 import { triggerHaptic, HapticType } from '../../logic/haptics';
@@ -25,6 +26,7 @@ const CHARADES_WORDS = [
 const ROUND_SECONDS = 60;
 
 const CharadesGame = ({ onNext }) => {
+    const t = useT();
     const [gameState, setGameState] = useState('setup'); // setup, playing, finished
     const [score, setScore] = useState(0);
     const [timeLeft, setTimeLeft] = useState(ROUND_SECONDS);
@@ -72,11 +74,11 @@ const CharadesGame = ({ onNext }) => {
     if (gameState === 'setup') {
         return (
             <div className="screen">
-                <h1>🎭 Charades</h1>
-                <p>Hold the phone to your forehead.</p>
-                <p>Your friends act it out – you guess!</p>
-                <Button onClick={startGame}>Start Game</Button>
-                <Button variant="secondary" onClick={onNext}>Skip</Button>
+                <h1>🎭 {t('mode_charades')}</h1>
+                <p>{t('charades_howto_1')}</p>
+                <p>{t('charades_howto_2')}</p>
+                <Button onClick={startGame}>{t('start_game')}</Button>
+                <Button variant="secondary" onClick={onNext}>{t('skip_card')}</Button>
             </div>
         );
     }
@@ -84,10 +86,10 @@ const CharadesGame = ({ onNext }) => {
     if (gameState === 'finished') {
         return (
             <div className="screen">
-                <h1>Time&apos;s Up!</h1>
+                <h1>{t('times_up')}</h1>
                 <div className="huge good">{score}</div>
-                <p>Points</p>
-                <Button onClick={onNext}>Next Card ➡️</Button>
+                <p>{t('points')}</p>
+                <Button onClick={onNext}>{t('next_card')} ➡️</Button>
             </div>
         );
     }
@@ -100,8 +102,8 @@ const CharadesGame = ({ onNext }) => {
             </div>
             <h1 className="grow charades-word">{currentWord}</h1>
             <div className="row">
-                <Button className="btn-big btn-stop" onClick={handlePass}>PASS</Button>
-                <Button className="btn-big btn-go" onClick={handleCorrect}>CORRECT</Button>
+                <Button className="btn-big btn-stop" onClick={handlePass}>{t('charades_pass')}</Button>
+                <Button className="btn-big btn-go" onClick={handleCorrect}>{t('charades_correct')}</Button>
             </div>
         </div>
     );

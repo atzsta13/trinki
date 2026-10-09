@@ -1,4 +1,4 @@
-/* Trinki styles. Rules for low-end phones: no backdrop-filter, animate only transform/opacity. */
+/* Party Penguin styles. Rules for low-end phones: no backdrop-filter, animate only transform/opacity. */
 
 /* ---------- Tokens ---------- */
 :root {
@@ -438,6 +438,8 @@ button {
 .pill { padding: 6px 12px; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; background: var(--surface-2); font-weight: 600; }
 .pill small { color: var(--muted); font-size: 0.7rem; text-transform: uppercase; }
 .roast { padding: 10px 15px; border-radius: 15px; background: rgba(0, 0, 0, 0.4); font-size: 0.9rem; animation: fade-in 0.4s 1s backwards; }
+
+.swipe-hint { letter-spacing: 0.5px; }
 
 .card-badge {
   padding: 6px 14px;

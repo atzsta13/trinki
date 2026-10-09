@@ -1,4 +1,4 @@
-# Trinki 🦝
+# Party Penguin 🐧
 
 Offline party card game for groups: add your friends, pick the vibe and pass the phone. Free, no ads, no accounts.
 React web app, shipped to Android and iOS with Capacitor.

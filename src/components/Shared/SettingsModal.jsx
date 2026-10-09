@@ -15,7 +15,7 @@ const Toggle = ({ label, checked, onToggle }) => (
 );
 
 const SettingsModal = ({ onClose }) => {
-    const { settings, toggleSound, toggleHaptics, setLanguage, resetHistory, gameState, goHome } = useGame();
+    const { settings, toggleSound, toggleHaptics, setLanguage, resetHistory, gameState, goHome, finishGame } = useGame();
     const t = useT();
 
     return (
@@ -43,6 +43,12 @@ const SettingsModal = ({ onClose }) => {
             </Button>
 
             {gameState === 'playing' && (
+                <Button className="full-width" onClick={() => { finishGame(); onClose(); }}>
+                    🏁 {t('end_game')}
+                </Button>
+            )}
+
+            {gameState === 'playing' && (
                 <Button
                     variant="danger"
                     className="full-width"
@@ -56,7 +62,7 @@ const SettingsModal = ({ onClose }) => {
                 </Button>
             )}
 
-            <p className="muted small center">Trinki {t('version')} {__APP_VERSION__}</p>
+            <p className="muted small center">Party Penguin {t('version')} {__APP_VERSION__}</p>
         </div>
     );
 };

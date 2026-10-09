@@ -4,8 +4,9 @@ import SetupScreen from './components/Screens/SetupScreen';
 import GameScreen from './components/Screens/GameScreen';
 import FingerChooser from './components/Screens/FingerChooser';
 import Disclaimer from './components/Screens/Disclaimer';
+import { STORAGE_PREFIX } from './logic/storage';
 
-const DISCLAIMER_KEY = 'trinki_disclaimer_accepted';
+const DISCLAIMER_KEY = `${STORAGE_PREFIX}disclaimer_accepted`;
 
 const SCREENS = {
   setup: SetupScreen,

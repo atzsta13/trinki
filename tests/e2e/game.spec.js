@@ -47,10 +47,12 @@ const advance = async (page) => {
 const startParty = async (page, onlyModes) => {
     await page.goto('/');
     if (onlyModes) {
-        // Click each active mode exactly once (element handles don't re-resolve between clicks).
+        // Deselect one mode at a time and wait until the UI reflects it, so no click can race a re-render.
         const active = page.locator('.mode-card.active');
-        for (const mode of await active.elementHandles()) await mode.click();
-        await expect(active).toHaveCount(0);
+        for (let n = await active.count(); n > 0; n--) {
+            await active.first().click();
+            await expect(active).toHaveCount(n - 1);
+        }
         for (const name of onlyModes) await page.locator('.mode-card', { hasText: name }).first().click();
         await expect(active).toHaveCount(onlyModes.length);
     }
@@ -60,8 +62,8 @@ const startParty = async (page, onlyModes) => {
 
 test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
-        localStorage.setItem('trinki_disclaimer_accepted', 'true');
-        localStorage.setItem('trinki_players', JSON.stringify(
+        localStorage.setItem('partypenguin_disclaimer_accepted', 'true');
+        localStorage.setItem('partypenguin_players', JSON.stringify(
             ['Alex', 'Sam', 'Chris'].map((name, i) => ({ id: String(i + 1), name, drinkCount: 0, streak: 0 }))
         ));
     });
@@ -115,10 +117,44 @@ test('dice button suggests a name without adding a player', async ({ page }) => 
     await expect(chips).toHaveCount(3);
 });
 
+test('ending the game from the menu shows the scoreboard, play again deals new cards', async ({ page }) => {
+    await startParty(page, ['Most Likely']);
+    await page.getByRole('button', { name: '☰' }).click();
+    await page.getByRole('button', { name: /end game/i }).click();
+    await expect(page.getByText(/party mvp/i)).toBeVisible();
+    await page.getByRole('button', { name: /play again/i }).click();
+    await expect(page.locator('.game-card')).toBeVisible();
+});
+
+test('every empty mode now has cards', async ({ page }) => {
+    for (const mode of ['Icebreaker', 'Bar', 'Pre-Game', 'New Year', 'Beach']) {
+        await startParty(page, [mode]);
+        await expect(page.locator('.game-card')).toBeVisible();
+        await page.getByRole('button', { name: '☰' }).click();
+        page.once('dialog', d => d.accept());
+        await page.getByRole('button', { name: /quit party/i }).click();
+    }
+});
+
 test('quitting from the menu returns to the setup screen', async ({ page }) => {
     await startParty(page, ['Most Likely']); // no minigames, so the ☰ menu is always there
     await page.getByRole('button', { name: '☰' }).click();
     page.once('dialog', d => d.accept());
     await page.getByRole('button', { name: /quit party|party verlassen/i }).click();
     await expect(page.getByRole('button', { name: /•/ })).toBeVisible();
+});
+
+test('players saved under the old app name are kept after the rename', async ({ browser }) => {
+    const page = await browser.newPage();
+    await page.addInitScript(() => {
+        if (sessionStorage.getItem('seeded')) return;
+        sessionStorage.setItem('seeded', '1');
+        localStorage.clear();
+        localStorage.setItem('trinki_disclaimer_accepted', 'true');
+        localStorage.setItem('trinki_players', JSON.stringify([{ id: 'x', name: 'Legacy Larry', drinkCount: 0, streak: 0 }]));
+    });
+    await page.goto('/');
+    await expect(page.locator('.player-chip', { hasText: 'Legacy Larry' })).toBeVisible();
+    expect(await page.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('trinki_')))).toEqual([]);
+    await page.close();
 });

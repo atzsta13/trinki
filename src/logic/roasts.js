@@ -11,7 +11,7 @@ export const ROASTS = [
     "Skill issue.",
     "Cringe.",
     "Are we having fun yet?",
-    "🦝 *Judgemental Stare*",
+    "🐧 *Judgemental Stare*",
     "I've seen better parties at a library.",
     "Drink water too, amateur."
 ];
